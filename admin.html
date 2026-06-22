@@ -133,8 +133,8 @@ main{flex:1;background:var(--cream);overflow-x:hidden;padding:20px;}
     <h2>PSC Construction Operations</h2>
     <p>Project Managers &amp; Operations Management</p>
     <div class="lf">
-      <label>Username</label><input id="loginUser" type="text" placeholder="e.g. pm_rd">
-      <label>PIN</label><input id="loginPin" type="password" placeholder="PIN" maxlength="6">
+      <label>Username</label><input id="loginUser" type="text" placeholder="e.g. pm_rd" autocomplete="off">
+      <label>PIN</label><input id="loginPin" type="password" placeholder="PIN" maxlength="6" autocomplete="new-password">
       <button class="btn-login" onclick="doLogin()">Sign In →</button>
     </div>
     <div class="login-hint">Contact your administrator to reset your PIN.</div>
@@ -386,10 +386,15 @@ function canEdit(p){return USER&&(USER.role==='om'||(USER.project_ids&&USER.proj
 async function doLogin(){
   const user=gv('loginUser').trim(),pin=gv('loginPin').trim();
   if(!user||!pin){toast('Enter username and PIN','err');return;}
+  // Debug: remove after login works
+  console.log('Login attempt:', JSON.stringify({user, pin, uLen:user.length, pLen:pin.length}));
   try{
     const users=await sbGet('psc_users',`username=eq.${encodeURIComponent(user)}`);
-    if(!users.length){toast('Invalid credentials','err');return;}
-    if(users[0].pin!==pin){toast('Invalid credentials','err');return;}
+    console.log('Supabase returned:', JSON.stringify(users));    if(!users.length){toast('User not found','err');return;}
+    const dbPin = String(users[0].pin).trim();
+    const entPin = String(pin).trim();
+    console.log('PIN compare:', JSON.stringify({dbPin, entPin, match: dbPin===entPin}));
+    if(dbPin!==entPin){toast('Invalid PIN','err');return;}
     if(users[0].is_active===false){toast('Account is inactive','err');return;}
     USER=users[0];
     document.getElementById('loginWrap').style.display='none';
