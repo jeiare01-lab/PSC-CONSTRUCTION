@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSC Construction Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── CONFIG ── fill your Supabase creds in the <script> block below */
+:root {
+  --navy:#0D1B3D; --steel:#1E3A6E; --orange:#E65100; --gold:#F5A623;
+  --cream:#FEF9F3; --mist:#EAF0FB; --green:#1A7A4A; --red:#C0392B;
+  --amber:#D4830A; --mid:#6B7A99; --border:#DDE4F0; --white:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--navy);color:#1A1A2E;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:var(--navy);padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--orange);position:sticky;top:0;z-index:200;height:52px;}
+.tl{display:flex;align-items:center;gap:12px;}
+.logo{background:var(--orange);color:#fff;font-weight:800;font-size:12px;letter-spacing:.1em;padding:5px 9px;border-radius:4px;}
+.tl h1{color:#fff;font-size:14px;font-weight:700;letter-spacing:.05em;}
+.tl p{color:var(--gold);font-size:10px;letter-spacing:.04em;}
+.tr{display:flex;align-items:center;gap:8px;}
+.meta-pill{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);font-size:10px;padding:4px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);}
+.btn-admin{background:var(--orange);color:#fff;border:none;padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;letter-spacing:.04em;}
+
+/* SIDENAV */
+.layout{display:flex;min-height:calc(100vh - 52px);}
+.sidenav{width:200px;background:#0A1630;flex-shrink:0;padding:16px 0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:9px 16px;color:rgba(255,255,255,.55);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border-left:3px solid transparent;}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.05);}
+.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(245,166,35,.07);}
+.nav-item .icon{font-size:14px;width:18px;text-align:center;}
+
+/* MAIN */
+main{flex:1;background:var(--cream);overflow-x:hidden;}
+.panel{display:none;padding:20px;}
+.panel.active{display:block;}
+
+/* LOADING */
+.loading{text-align:center;padding:60px 20px;color:var(--mid);font-size:13px;}
+
+/* SECTION HEADER */
+.sh{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin:20px 0 10px;display:flex;align-items:center;gap:8px;}
+.sh::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.kpi{background:var(--white);border-radius:7px;padding:14px 16px;border-left:4px solid var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.kpi.g{border-left-color:var(--green)}.kpi.o{border-left-color:var(--orange)}.kpi.r{border-left-color:var(--red)}.kpi.a{border-left-color:var(--amber)}
+.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:.09em;color:var(--mid);text-transform:uppercase;margin-bottom:5px;}
+.kpi-val{font-size:24px;font-weight:800;color:var(--navy);line-height:1;}
+.kpi-sub{font-size:10px;color:var(--mid);margin-top:3px;}
+
+/* CARD */
+.card{background:var(--white);border-radius:7px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:16px;}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);margin-bottom:12px;}
+
+/* TWO COL */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:700px){.two,.three{grid-template-columns:1fr;}}
+
+/* CHART */
+.ch{position:relative;height:260px;}
+.ch.sm{height:200px;}
+.ch.lg{height:320px;}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+.bg{background:#D4F0E3;color:var(--green)}.br{background:#FAE0DE;color:var(--red)}.ba{background:#FDF0D5;color:var(--amber)}.bn{background:var(--mist);color:var(--navy)}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{background:var(--mist);color:var(--navy);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;text-align:left;}
+.tbl td{padding:8px 10px;border-bottom:1px solid #EDF1F7;vertical-align:top;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:#F7F9FC;}
+
+/* PROGRESS */
+.pbar{background:#E0E7EF;border-radius:4px;height:7px;overflow:hidden;}
+.pfill{height:100%;border-radius:4px;background:var(--orange);}
+.pfill.g{background:var(--green)}.pfill.a{background:var(--amber)}
+
+/* DETAIL GRID */
+.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;}
+.di{background:var(--mist);border-radius:6px;padding:10px 12px;}
+.di .dl{font-size:9px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.07em;}
+.di .dv{font-size:13px;font-weight:700;color:var(--navy);margin-top:2px;}
+
+/* HISTORY TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-entry{border-left:3px solid var(--border);margin-left:8px;padding:0 0 20px 16px;position:relative;}
+.tl-entry::before{content:'';position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--orange);border:2px solid var(--white);}
+.tl-week{font-size:10px;font-weight:700;color:var(--orange);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.tl-card{background:var(--white);border-radius:6px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.07);font-size:12px;}
+.tl-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:4px;}
+.tl-item{min-width:100px;}.tl-item .tl-l{font-size:9px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.tl-item .tl-v{font-size:13px;font-weight:700;color:var(--navy);}
+
+/* HEAT MAP */
+.heat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.heat-cell{border-radius:6px;padding:10px;text-align:center;font-size:10px;font-weight:700;}
+.heat-H{background:#FAE0DE;color:var(--red)}.heat-M{background:#FDF0D5;color:var(--amber)}.heat-L{background:#D4F0E3;color:var(--green)}
+.heat-lbl{font-size:9px;margin-bottom:2px;}
+
+/* SCOREBOARD */
+.sb-table{width:100%;border-collapse:collapse;font-size:11px;}
+.sb-table th{background:var(--navy);color:#fff;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:8px 10px;}
+.sb-table td{padding:8px 10px;border-bottom:1px solid #EDF1F7;}
+.sb-table tr:hover td{background:#F7F9FC;}
+
+/* CEO SUMMARY */
+.ceo-box{background:linear-gradient(135deg,var(--navy),var(--steel));color:#fff;border-radius:8px;padding:20px 22px;margin-bottom:16px;}
+.ceo-box h2{font-size:16px;font-weight:800;margin-bottom:4px;letter-spacing:.03em;}
+.ceo-box p{font-size:12px;color:rgba(255,255,255,.65);margin-bottom:14px;}
+.ceo-snap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.ceo-item{background:rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;}
+.ceo-item .cl{font-size:9px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;font-weight:700;}
+.ceo-item .cv{font-size:15px;font-weight:800;margin-top:2px;}
+
+/* TOAST */
+/* AI ANALYTICS */
+.ai-box{background:linear-gradient(135deg,#0A1630 0%,#1E3A6E 100%);border-radius:10px;padding:20px 22px;margin-bottom:16px;border:1px solid rgba(245,166,35,.2);}
+.ai-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.ai-title{display:flex;align-items:center;gap:10px;}
+.ai-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--orange),var(--gold));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.ai-title h3{color:#fff;font-size:14px;font-weight:800;letter-spacing:.03em;}
+.ai-title p{color:rgba(255,255,255,.5);font-size:10px;margin-top:1px;}
+.ai-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.ai-select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;padding:7px 12px;border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer;}
+.ai-select option{background:var(--navy);color:#fff;}
+.btn-ai{background:linear-gradient(135deg,var(--orange),#FF7043);color:#fff;border:none;padding:8px 18px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:all .2s;}
+.btn-ai:hover{opacity:.85;}
+.btn-ai:disabled{opacity:.4;cursor:not-allowed;}
+.ai-output{min-height:120px;}
+.ai-thinking{display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.5);font-size:12px;padding:20px 0;}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 1.2s infinite;}
+.ai-dot:nth-child(2){animation-delay:.2s;}.ai-dot:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,80%,100%{opacity:.2;transform:scale(.8);}40%{opacity:1;transform:scale(1);}}
+.ai-result{color:rgba(255,255,255,.88);font-size:12px;line-height:1.75;}
+.ai-result h4{color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:14px 0 6px;}
+.ai-result h4:first-child{margin-top:0;}
+.ai-result ul{margin:0 0 10px 16px;}
+.ai-result li{margin-bottom:4px;}
+.ai-result strong{color:#fff;}
+.ai-result .chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;margin:2px;}
+.chip-r{background:rgba(192,57,43,.3);color:#FF8A80;border:1px solid rgba(192,57,43,.4);}
+.chip-a{background:rgba(212,131,10,.3);color:#FFD54F;border:1px solid rgba(212,131,10,.4);}
+.chip-g{background:rgba(26,122,74,.3);color:#69F0AE;border:1px solid rgba(26,122,74,.4);}
+.ai-divider{height:1px;background:rgba(255,255,255,.08);margin:14px 0;}
+.ai-meta{font-size:9px;color:rgba(255,255,255,.3);margin-top:12px;text-align:right;}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;padding:10px 18px;border-radius:6px;font-size:12px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tl">
+    <div class="logo">PSC</div>
+    <div><h1>PSC Construction Dashboard</h1><p id="metaLine">Building Better Tomorrows</p></div>
+  </div>
+  <div class="tr">
+    <div class="meta-pill" id="liveBadge">— LIVE</div>
+    <a href="admin.html" class="btn-admin">⚙ Admin</a>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDENAV -->
+  <nav class="sidenav">
+    <div class="nav-item active" data-panel="overview"  onclick="nav(this)"><span class="icon">📊</span> Ops Overview</div>
+    <div class="nav-item" data-panel="schedule"  onclick="nav(this)"><span class="icon">📅</span> Schedule</div>
+    <div class="nav-item" data-panel="cost"      onclick="nav(this)"><span class="icon">💰</span> Cost &amp; CPI</div>
+    <div class="nav-item" data-panel="procurement" onclick="nav(this)"><span class="icon">📦</span> Procurement</div>
+    <div class="nav-item" data-panel="changeorders" onclick="nav(this)"><span class="icon">🔄</span> Change Orders</div>
+    <div class="nav-item" data-panel="productivity" onclick="nav(this)"><span class="icon">⚙️</span> Productivity &amp; OT</div>
+    <div class="nav-item" data-panel="safety"    onclick="nav(this)"><span class="icon">🦺</span> Safety &amp; Quality</div>
+    <div class="nav-item" data-panel="risks"     onclick="nav(this)"><span class="icon">⚠️</span> Risks &amp; Actions</div>
+    <div class="nav-item" data-panel="ceo"       onclick="nav(this)"><span class="icon">🎯</span> CEO Summary</div>
+    <div class="nav-item" data-panel="scurve"    onclick="nav(this)"><span class="icon">📈</span> S-Curve</div>
+    <div class="nav-item" data-panel="history"   onclick="nav(this)"><span class="icon">📜</span> History</div>
+  </nav>
+
+  <main>
+    <!-- ── OVERVIEW ── -->
+    <div class="panel active" id="panel-overview">
+      <div class="sh">Project Physical Progress</div>
+      <div id="overviewProgress" class="loading">Loading…</div>
+
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Progress vs Budget Spend (%)</div>
+          <div class="ch sm"><canvas id="chartProgressBudget"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Budget Utilization by Project (₱M)</div>
+          <div class="ch sm"><canvas id="chartBudgetUtil"></canvas></div>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Safety Snapshot</div>
+          <div id="safetySnap"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Immediate Action Items</div>
+          <div id="actionSnap"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Procurement Quick View</div>
+        <table class="tbl" id="procSnap">
+          <thead><tr><th>Project</th><th>Item</th><th>Vendor</th><th>Required</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SCHEDULE ── -->
+    <div class="panel" id="panel-schedule">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Schedule Variance (Days Ahead)</div>
+          <div class="ch"><canvas id="chartSV"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Project Timeline Overview</div>
+          <table class="tbl" id="schedTable">
+            <thead><tr><th>Project</th><th>Planned Finish</th><th>Forecast</th><th>Variance</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Critical Path Activities</div>
+        <div id="criticalList"></div>
+      </div>
+    </div>
+
+    <!-- ── COST ── -->
+    <div class="panel" id="panel-cost">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">CPI by Project (>1.0 = Good)</div>
+          <div class="ch"><canvas id="chartCPI"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CPI Comparison</div>
+          <div class="ch"><canvas id="chartCPIBar"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detailed Cost by Project</div>
+        <table class="tbl" id="costTable">
+          <thead><tr><th>Project</th><th>Approved Budget (₱)</th><th>Actual Cost (₱)</th><th>Remaining (₱)</th><th>CPI</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PROCUREMENT ── -->
+    <div class="panel" id="panel-procurement">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Status Distribution</div>
+          <div class="ch sm"><canvas id="chartProcStatus"></canvas></div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="dg" id="procKPIs"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Procurement Detail</div>
+        <table class="tbl" id="procTable">
+          <thead><tr><th>Project</th><th>Item</th><th>Vendor</th><th>Required</th><th>Delivery</th><th>Status</th><th>Buffer</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── CHANGE ORDERS ── -->
+    <div class="panel" id="panel-changeorders">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">CO Value by Project (₱M)</div>
+          <div class="ch"><canvas id="chartCOVal"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CO Status Breakdown</div>
+          <div class="ch"><canvas id="chartCOStatus"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Change Order Register</div>
+        <table class="tbl" id="coTable">
+          <thead><tr><th>Project</th><th>CO No.</th><th>Description</th><th>Amount (₱)</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PRODUCTIVITY ── -->
+    <div class="panel" id="panel-productivity">
+      <div class="sh">Operations Management Division — Housing Projects</div>
+      <div class="card">
+        <div class="card-title">Project Scoreboard</div>
+        <div style="overflow-x:auto">
+          <table class="sb-table" id="scoreTable">
+            <thead><tr>
+              <th>Project</th><th>PR%</th><th>Accmp. to Date</th><th>Variance (Days)</th>
+              <th>DDI%</th><th>OT%</th><th>Baseline</th>
+              <th>Ranks Cost (₱)</th><th>Staff Cost (₱)</th><th>Output LC (₱)</th><th>OLC/ALC</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Project PR vs PR Baseline</div>
+          <div class="ch"><canvas id="chartPR"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">DDI%, OT% vs Baseline</div>
+          <div class="ch"><canvas id="chartDDI"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Labor Cost Summary (₱)</div>
+        <table class="tbl" id="laborTable">
+          <thead><tr><th>Project</th><th>Ranks Cost (₱)</th><th>Staff Cost (₱)</th><th>Output Labor Cost (₱)</th><th>OLC/ALC</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SAFETY ── -->
+    <div class="panel" id="panel-safety">
+      <div class="kpi-grid" id="safetyKPIs"></div>
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Incidents &amp; Near-Miss</div>
+          <div class="ch sm"><canvas id="chartIncidents"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Inspection Completion Rate</div>
+          <div class="ch sm"><canvas id="chartInspRate"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detailed Safety Report</div>
+        <table class="tbl" id="safetyTable">
+          <thead><tr><th>Project</th><th>Insp Due</th><th>Done</th><th>Rate</th><th>Man-Hours</th><th>NCR Open</th><th>Incidents</th><th>Near Miss</th><th>Last Toolbox</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── RISKS ── -->
+    <div class="panel" id="panel-risks">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Risk Register</div>
+          <table class="tbl" id="riskTable">
+            <thead><tr><th>Project</th><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th><th>Due</th><th>Mitigation</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Risk Heat Map</div>
+          <div class="heat-grid" id="heatMap"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sh" style="margin-top:0">Action Items</div>
+        <table class="tbl" id="actionTable">
+          <thead><tr><th>#</th><th>Project</th><th>Issue</th><th>Priority</th><th>Action</th><th>Responsible</th><th>Due Date</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- AI ANALYTICS -->
+      <div class="ai-box">
+        <div class="ai-header">
+          <div class="ai-title">
+            <div class="ai-icon">🤖</div>
+            <div>
+              <h3>AI Risk & Project Analytics</h3>
+              <p>Powered by Claude — analyzes live project data from Supabase</p>
+            </div>
+          </div>
+          <div class="ai-controls">
+            <select class="ai-select" id="aiProjectFilter">
+              <option value="all">All Projects</option>
+            </select>
+            <select class="ai-select" id="aiAnalysisType">
+              <option value="risk">Risk Assessment</option>
+              <option value="schedule">Schedule Analysis</option>
+              <option value="cost">Cost & CPI Analysis</option>
+              <option value="safety">Safety Analysis</option>
+              <option value="executive">Executive Summary</option>
+              <option value="full">Full Project Report</option>
+            </select>
+            <button class="btn-ai" id="btnRunAI" onclick="runAIAnalysis()">⚡ Analyze</button>
+          </div>
+        </div>
+        <div class="ai-output" id="aiOutput">
+          <div style="color:rgba(255,255,255,.3);font-size:12px;padding:20px 0;text-align:center">
+            Select a project and analysis type, then click Analyze.
+          </div>
+        </div>
+        <div class="ai-meta" id="aiMeta"></div>
+      </div>
+    </div>
+
+    <!-- ── CEO ── -->
+    <div class="panel" id="panel-ceo">
+      <div class="ceo-box">
+        <h2>Weekly Executive Summary</h2>
+        <p>PSC Construction Operations | Bohol, Philippines</p>
+        <div class="ceo-snap" id="ceoSnap"></div>
+      </div>
+      <div class="sh">Project Snapshots</div>
+      <div id="ceoProjects"></div>
+      <div class="sh">CEO Recommendations</div>
+      <table class="tbl" id="ceoRecs">
+        <thead><tr><th>#</th><th>Recommendation</th><th>Action</th><th>Timeline</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- ── S-CURVE ── -->
+    <div class="panel" id="panel-scurve">
+      <div class="sh">Per-Project S-Curves — Planned vs Actual vs Forecast</div>
+      <div id="scurveProjects"></div>
+      <div class="sh">Portfolio Cumulative S-Curve</div>
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Portfolio — Cumulative Physical Progress (%)</div>
+          <div class="ch lg"><canvas id="chartPortProgress"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Portfolio — Cumulative Cost (₱M)</div>
+          <div class="ch lg"><canvas id="chartPortCost"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Earned Value Management (EVM) Summary — Latest Period</div>
+        <div style="overflow-x:auto">
+          <table class="tbl" id="evmTable">
+            <thead><tr><th>Project</th><th>BAC (₱)</th><th>PV (₱)</th><th>EV (₱)</th><th>AC (₱)</th><th>SV</th><th>CV</th><th>SPI</th><th>CPI</th><th>EAC (₱)</th><th>VAC (₱)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div class="panel" id="panel-history">
+      <div class="sh">Portfolio Progress Trend — Weekly History</div>
+      <div class="three">
+        <div class="card">
+          <div class="card-title">Physical Progress % — All Projects</div>
+          <div class="ch sm"><canvas id="chartHistProg"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CPI Trend — All Projects</div>
+          <div class="ch sm"><canvas id="chartHistCPI"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Actual Cost (₱M)</div>
+          <div class="ch sm"><canvas id="chartHistCost"></canvas></div>
+        </div>
+      </div>
+      <div class="sh">Weekly Snapshot Log</div>
+      <div id="historyLog" class="loading">Loading history…</div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG — fill your Supabase credentials
+// ══════════════════════════════════════════
+const SUPABASE_URL = 'https://ppmvfkmltfxmllnlinsl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwbXZma21sdGZ4bWxsbmxpbnNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1ODA5ODEsImV4cCI6MjA5NzE1Njk4MX0.gdJKESBUoLxqTAh6y_dQlZMNgPq3LlQXoBopNd1DAk4';
+
+// ── API helpers ──
+const h = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
+async function sbGet(table,params=''){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{headers:h});
+  return r.json();
+}
+
+// ── State ──
+let PROJECTS=[], LATEST={}, HISTORY=[];
+let charts={};
+
+// ── Nav ──
+function nav(el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+el.dataset.panel).classList.add('active');
+  lazyRender(el.dataset.panel);
+}
+
+// ── Helpers ──
+function peso(v,decimals=0){if(!v&&v!==0)return '—';if(Math.abs(v)>=1e9)return '₱'+(v/1e9).toFixed(2)+'B';if(Math.abs(v)>=1e6)return '₱'+(v/1e6).toFixed(1)+'M';return '₱'+Number(v).toLocaleString();}
+function pct(v){return v==null?'—':Number(v).toFixed(2)+'%';}
+function num(v,d=2){return v==null?'—':Number(v).toFixed(d);}
+function badge(v,type){
+  if(type==='sched')return v==='Ahead'?'<span class="badge bg">Ahead</span>':v==='On Track'?'<span class="badge bn">On Track</span>':'<span class="badge br">Delayed</span>';
+  if(type==='health')return v==='Good'?'<span class="badge bg">Good</span>':v==='Fair'?'<span class="badge ba">Fair</span>':'<span class="badge br">At Risk</span>';
+  if(type==='cost')return v==='Within Budget'?'<span class="badge bg">Within Budget</span>':'<span class="badge br">Over Budget</span>';
+  if(type==='impact')return v==='High'?'<span class="badge br">High</span>':v==='Medium'?'<span class="badge ba">Medium</span>':'<span class="badge bg">Low</span>';
+  if(type==='proc'){const m={Delivered:'bg','In Progress':'ba',Delayed:'br',Pending:'bn'};return `<span class="badge ${m[v]||'bn'}">${v||'—'}</span>`;}
+  return `<span class="badge bn">${v||'—'}</span>`;
+}
+function mkChart(id,type,data,opts={}){
+  if(charts[id])charts[id].destroy();
+  const ctx=document.getElementById(id);
+  if(!ctx)return;
+  charts[id]=new Chart(ctx,{type,data,options:{responsive:true,maintainAspectRatio:false,...opts}});
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── LOAD DATA ──
+async function loadData(){
+  try{
+    [PROJECTS] = await Promise.all([sbGet('psc_projects','is_active=eq.true&order=name')]);
+    // Get latest approved submission per project
+    const subs = await sbGet('psc_submissions','status=eq.approved&order=submitted_at.desc');
+    LATEST={};
+    subs.forEach(s=>{if(!LATEST[s.project_id])LATEST[s.project_id]=s;});
+    // History
+    HISTORY = await sbGet('psc_history','order=approved_at.desc&limit=100');
+    // Meta
+    const metas = await sbGet('psc_report_meta','order=updated_at.desc&limit=1');
+    const meta = metas[0];
+    if(meta){
+      document.getElementById('metaLine').textContent = meta.week_of ? `${meta.week_of} · Prepared by ${meta.prepared_by||''}` : 'Building Better Tomorrows';
+      document.getElementById('liveBadge').textContent = `${meta.week_of||''} LIVE`;
+    }
+    renderAll();
+  }catch(e){
+    console.error(e);
+    document.querySelectorAll('.loading').forEach(el=>el.textContent='Error loading data. Check Supabase config.');
+  }
+}
+
+function renderAll(){
+  renderOverview();
+  lazyRender('overview');
+}
+
+function lazyRender(panel){
+  const fn={
+    overview:renderOverview, schedule:renderSchedule, cost:renderCost,
+    procurement:renderProcurement, changeorders:renderChangeOrders,
+    productivity:renderProductivity, safety:renderSafety,
+    risks:renderRisks, ceo:renderCEO, scurve:renderSCurve, history:renderHistory
+  };
+  if(fn[panel])fn[panel]();
+}
+
+// ── helpers to collect across projects ──
+function allProc(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.procurement?s.procurement.map(x=>({...x,proj:p.name})):[];});}
+function allRisks(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.risks?s.risks.map(x=>({...x,proj:p.name})):[];});}
+function allActions(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.action_items?s.action_items.map(x=>({...x,proj:p.name})):[];});}
+function allCOs(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.change_orders?s.change_orders.map(x=>({...x,proj:p.name})):[];});}
+
+// ── OVERVIEW ──
+function renderOverview(){
+  // progress cards
+  const rows=PROJECTS.map(p=>{
+    const s=LATEST[p.id]||{};
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div><div style="font-size:14px;font-weight:800;color:var(--navy)">${p.name}</div>
+        <div style="font-size:10px;color:var(--mid)">${p.code}</div></div>
+        <div style="display:flex;gap:6px">${badge(s.sched_status,'sched')} ${badge(s.health,'health')}</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:6px">
+        <div style="font-size:32px;font-weight:800;color:var(--orange)">${pct(s.progress)}</div>
+        <div style="font-size:11px;color:var(--mid);padding-bottom:4px">complete · CPI ${num(s.cpi)}</div>
+      </div>
+      <div class="pbar"><div class="pfill" style="width:${s.progress||0}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mid);margin-top:4px">
+        <span>${badge(s.cost_status,'cost')}</span><span>Budget: ${peso(p.budget)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  const el=document.getElementById('overviewProgress');
+  if(el)el.innerHTML=rows||'<div class="loading">No approved data yet.</div>';
+
+  // charts
+  const labels=PROJECTS.map(p=>p.name);
+  const progData=PROJECTS.map(p=>(LATEST[p.id]?.progress||0));
+  const spendPct=PROJECTS.map(p=>{const s=LATEST[p.id];return s&&p.budget?((s.ac||0)/p.budget*100):0;});
+  mkChart('chartProgressBudget','bar',{labels,datasets:[
+    {label:'Progress %',data:progData,backgroundColor:'#E65100',borderRadius:4},
+    {label:'Spend %',data:spendPct,backgroundColor:'#1E3A6E',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  const budgetData=PROJECTS.map(p=>p.budget/1e6);
+  const acData=PROJECTS.map(p=>(LATEST[p.id]?.ac||0)/1e6);
+  mkChart('chartBudgetUtil','bar',{labels,datasets:[
+    {label:'Budget ₱M',data:budgetData,backgroundColor:'#E0E7EF',borderRadius:4},
+    {label:'Actual ₱M',data:acData,backgroundColor:'#E65100',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>'₱'+v+'M'}}}});
+
+  // safety snap
+  const totIncidents=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.incidents||0),0);
+  const totNCR=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ncr_open||0),0);
+  const totMH=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.man_hours||0),0);
+  const safetyEl=document.getElementById('safetySnap');
+  if(safetyEl)safetyEl.innerHTML=`<div class="dg">
+    <div class="di"><div class="dl">Safe Man-Hours</div><div class="dv">${(totMH/1e6).toFixed(3)}M</div></div>
+    <div class="di"><div class="dl">Incidents</div><div class="dv" style="color:${totIncidents>0?'var(--red)':'var(--green)'}">${totIncidents}</div></div>
+    <div class="di"><div class="dl">NCR Open</div><div class="dv" style="color:${totNCR>0?'var(--amber)':'var(--green)'}">${totNCR}</div></div>
+  </div>`;
+
+  // action snap
+  const actions=allActions().filter(a=>a.status!=='Closed').slice(0,5);
+  const actionEl=document.getElementById('actionSnap');
+  if(actionEl)actionEl.innerHTML=actions.length?actions.map(a=>`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:11px">
+    <span class="badge ${a.priority==='High'?'br':a.priority==='Medium'?'ba':'bg'}">${a.priority||'—'}</span>
+    <strong style="margin-left:6px">${a.proj}</strong> — ${a.issue||a.action||'—'}
+  </div>`).join(''):'<div style="color:var(--mid);font-size:12px;padding:8px 0">No open action items.</div>';
+
+  // proc snap
+  const tbody=document.querySelector('#procSnap tbody');
+  if(tbody){const items=allProc().slice(0,6);tbody.innerHTML=items.map(i=>`<tr><td>${i.proj}</td><td>${i.item||'—'}</td><td>${i.vendor||'—'}</td><td>${i.required||'—'}</td><td>${badge(i.status,'proc')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:var(--mid)">No procurement data.</td></tr>';}
+}
+
+// ── SCHEDULE ──
+function renderSchedule(){
+  const labels=PROJECTS.map(p=>p.name);
+  const svData=PROJECTS.map(p=>LATEST[p.id]?.sv_days||0);
+  mkChart('chartSV','bar',{labels,datasets:[{label:'Variance (days)',data:svData,backgroundColor:svData.map(v=>v>=0?'#1A7A4A':'#C0392B'),borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>(v>0?'+':'')+v+'d'}}}});
+
+  const tbody=document.querySelector('#schedTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};return`<tr><td><strong>${p.name}</strong></td><td>${s.planned_finish||p.planned_finish||'—'}</td><td>${s.forecast_finish||p.forecast_finish||'—'}</td><td><span style="color:${(s.sv_days||0)>=0?'var(--green)':'var(--red)'};font-weight:700">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</span></td></tr>`;}).join('');
+
+  const crit=document.getElementById('criticalList');
+  if(crit)crit.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id];return s?.critical_activities?`<div style="padding:8px 0;border-bottom:1px solid var(--border)"><strong style="font-size:11px;color:var(--orange)">${p.name}</strong> <span style="font-size:12px">${s.critical_activities}</span></div>`:''}).join('')||'<div style="color:var(--mid);font-size:12px">No critical activities flagged.</div>';
+}
+
+// ── COST ──
+function renderCost(){
+  const labels=PROJECTS.map(p=>p.name);
+  const cpiData=PROJECTS.map(p=>LATEST[p.id]?.cpi||0);
+  mkChart('chartCPI','line',{labels,datasets:[
+    {label:'CPI',data:cpiData,borderColor:'#E65100',backgroundColor:'rgba(230,81,0,.1)',tension:.4,pointRadius:5,fill:true},
+    {label:'Target (1.0)',data:PROJECTS.map(()=>1),borderColor:'#1A7A4A',borderDash:[5,5],pointRadius:0}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{min:0}}});
+
+  mkChart('chartCPIBar','bar',{labels,datasets:[{label:'CPI',data:cpiData,backgroundColor:cpiData.map(v=>v>=1?'#1A7A4A':'#C0392B'),borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{min:0}}});
+
+  const tbody=document.querySelector('#costTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};const rem=(p.budget||0)-(s.ac||0);return`<tr>
+    <td><strong>${p.name}</strong></td><td>${peso(p.budget)}</td><td>${peso(s.ac)}</td>
+    <td style="color:${rem>=0?'var(--green)':'var(--red)'}">${peso(rem)}</td>
+    <td style="font-weight:700;color:${(s.cpi||0)>=1?'var(--green)':'var(--red)'}">${num(s.cpi)}</td>
+    <td>${badge(s.cost_status,'cost')}</td></tr>`;}).join('');
+}
+
+// ── PROCUREMENT ──
+function renderProcurement(){
+  const all=allProc();
+  const counts={Delivered:0,'In Progress':0,Delayed:0,Pending:0};
+  all.forEach(i=>{if(counts[i.status]!=null)counts[i.status]++;});
+  mkChart('chartProcStatus','doughnut',{labels:Object.keys(counts),datasets:[{data:Object.values(counts),backgroundColor:['#1A7A4A','#D4830A','#C0392B','#2A3F6B'],borderWidth:2}]},
+    {plugins:{legend:{position:'right',labels:{font:{size:10}}}}});
+  const kpis=document.getElementById('procKPIs');
+  if(kpis)kpis.innerHTML=Object.entries(counts).map(([k,v])=>`<div class="di"><div class="dl">${k}</div><div class="dv">${v}</div></div>`).join('');
+  const tbody=document.querySelector('#procTable tbody');
+  if(tbody)tbody.innerHTML=all.map(i=>`<tr><td>${i.proj}</td><td><strong>${i.item||'—'}</strong></td><td>${i.vendor||'—'}</td><td>${i.required||'—'}</td><td>${i.delivery||'—'}</td><td>${badge(i.status,'proc')}</td><td>${i.buffer||'—'}</td><td>${i.remarks||'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="color:var(--mid)">No procurement data.</td></tr>';
+}
+
+// ── CHANGE ORDERS ──
+function renderChangeOrders(){
+  const all=allCOs();
+  const labels=PROJECTS.map(p=>p.name);
+  const coVal=PROJECTS.map(p=>{const s=LATEST[p.id];return s&&s.change_orders?s.change_orders.reduce((a,c)=>a+(c.amount||0),0)/1e6:0;});
+  mkChart('chartCOVal','bar',{labels,datasets:[{label:'CO Value ₱M',data:coVal,backgroundColor:'#E65100',borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'₱'+v+'M'}}}});
+  const statuses=['Approved','Pending','Rejected'];
+  const sData=statuses.map(st=>all.filter(c=>c.status===st).length);
+  mkChart('chartCOStatus','pie',{labels:statuses,datasets:[{data:sData,backgroundColor:['#1A7A4A','#D4830A','#C0392B'],borderWidth:2}]},
+    {plugins:{legend:{position:'right',labels:{font:{size:10}}}}});
+  const tbody=document.querySelector('#coTable tbody');
+  if(tbody)tbody.innerHTML=all.map(i=>`<tr><td>${i.proj}</td><td>${i.co_no||'—'}</td><td>${i.description||'—'}</td><td>${peso(i.amount)}</td><td>${badge(i.status,'proc')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:var(--mid)">No change orders.</td></tr>';
+}
+
+// ── PRODUCTIVITY ──
+function renderProductivity(){
+  const tbody=document.querySelector('#scoreTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};return`<tr>
+    <td><strong>${p.name}</strong></td><td>${pct(s.progress)}</td>
+    <td>${pct(s.progress)}</td>
+    <td style="color:${(s.sv_days||0)>=0?'var(--green)':'var(--red)'}">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</td>
+    <td>${num(s.ddi)}%</td><td style="color:${(s.ot_rate||0)<=(s.ot_baseline||20)?'var(--green)':'var(--red)'}">${num(s.ot_rate)}%</td>
+    <td>${num(s.ot_baseline)}%</td>
+    <td>${peso(s.ranks_cost)}</td><td>${peso(s.staff_cost)}</td><td>${peso(s.output_lc)}</td>
+    <td style="font-weight:700;color:${(s.olc_alc||1)<=1?'var(--green)':'var(--red)'}">${num(s.olc_alc,3)}</td>
+  </tr>`;}).join('');
+
+  const labels=PROJECTS.map(p=>p.name);
+  mkChart('chartPR','bar',{labels,datasets:[
+    {label:'PR%',data:PROJECTS.map(p=>LATEST[p.id]?.progress||0),backgroundColor:'#E65100',borderRadius:4},
+    {label:'Budget Spend%',data:PROJECTS.map(p=>{const s=LATEST[p.id];return s&&p.budget?(s.ac/p.budget*100):0;}),backgroundColor:'#1E3A6E',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  mkChart('chartDDI','bar',{labels,datasets:[
+    {label:'DDI%',data:PROJECTS.map(p=>LATEST[p.id]?.ddi||0),backgroundColor:'#D4830A',borderRadius:4},
+    {label:'OT%',data:PROJECTS.map(p=>LATEST[p.id]?.ot_rate||0),backgroundColor:'#E65100',borderRadius:4},
+    {label:'OT Baseline%',data:PROJECTS.map(p=>LATEST[p.id]?.ot_baseline||20),backgroundColor:'#1A7A4A',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  const ltbody=document.querySelector('#laborTable tbody');
+  if(ltbody)ltbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};const eff=(s.olc_alc||1)<=1;return`<tr>
+    <td><strong>${p.name}</strong></td><td>${peso(s.ranks_cost)}</td><td>${peso(s.staff_cost)}</td>
+    <td>${peso(s.output_lc)}</td>
+    <td style="font-weight:700;color:${eff?'var(--green)':'var(--red)'}">${num(s.olc_alc,3)}</td>
+    <td><span class="badge ${eff?'bg':'br'}">${eff?'Efficient':'Review'}</span></td>
+  </tr>`;}).join('');
+}
+
+// ── SAFETY ──
+function renderSafety(){
+  const totMH=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.man_hours||0),0);
+  const totInc=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.incidents||0),0);
+  const totNM=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.near_miss||0),0);
+  const totNCR=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ncr_open||0),0);
+  const totDue=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ins_due||0),0);
+  const totDone=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ins_done||0),0);
+  document.getElementById('safetyKPIs').innerHTML=[
+    {l:'Safe Man-Hours',v:(totMH/1e6).toFixed(3)+'M',s:'Cumulative',c:'g'},
+    {l:'Inspections',v:`${totDone}/${totDue}`,s:totDue>0?Math.round(totDone/totDue*100)+'% done':'',c:totDone>=totDue?'g':'a'},
+    {l:'NCR Open',v:totNCR,s:'Non-conformance',c:totNCR===0?'g':'r'},
+    {l:'Incidents',v:totInc,s:totInc===0?'Zero incidents ✓':'Review required',c:totInc===0?'g':'r'},
+    {l:'Near Miss',v:totNM,s:'Reported',c:totNM===0?'g':'a'},
+  ].map(k=>`<div class="kpi ${k.c}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+
+  const pNames=PROJECTS.map(p=>p.name);
+  mkChart('chartIncidents','bar',{labels:pNames,datasets:[
+    {label:'Incidents',data:PROJECTS.map(p=>LATEST[p.id]?.incidents||0),backgroundColor:'#C0392B',borderRadius:4},
+    {label:'Near Miss',data:PROJECTS.map(p=>LATEST[p.id]?.near_miss||0),backgroundColor:'#D4830A',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}});
+
+  const rates=PROJECTS.map(p=>{const s=LATEST[p.id];return s&&s.ins_due?Math.round((s.ins_done||0)/s.ins_due*100):0;});
+  mkChart('chartInspRate','bar',{labels:pNames,datasets:[{label:'Completion %',data:rates,backgroundColor:rates.map(r=>r>=80?'#1A7A4A':r>=50?'#D4830A':'#C0392B'),borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{max:100,ticks:{callback:v=>v+'%'}}}});
+
+  const tbody=document.querySelector('#safetyTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};const rate=s.ins_due?Math.round((s.ins_done||0)/s.ins_due*100):0;return`<tr>
+    <td><strong>${p.name}</strong></td><td>${s.ins_due||0}</td><td>${s.ins_done||0}</td>
+    <td><span style="color:${rate>=80?'var(--green)':rate>=50?'var(--amber)':'var(--red)'};font-weight:700">${rate}%</span></td>
+    <td>${s.man_hours?Number(s.man_hours).toLocaleString():'—'}</td>
+    <td style="color:${s.ncr_open>0?'var(--red)':'var(--green)'};font-weight:700">${s.ncr_open||0}</td>
+    <td style="color:${s.incidents>0?'var(--red)':'var(--green)'};font-weight:700">${s.incidents||0}</td>
+    <td>${s.near_miss||0}</td><td>${s.last_toolbox||'—'}</td><td style="font-size:11px">${s.safety_action||'—'}</td>
+  </tr>`;}).join('');
+}
+
+// ── RISKS ──
+function renderRisks(){
+  const risks=allRisks();
+  const tbody=document.querySelector('#riskTable tbody');
+  if(tbody)tbody.innerHTML=risks.map(r=>`<tr><td>${r.proj}</td><td><strong>${r.desc||'—'}</strong></td><td>${badge(r.impact,'impact')}</td><td><span class="badge ba">${r.status||'—'}</span></td><td>${r.owner||'—'}</td><td>${r.due||'—'}</td><td style="font-size:11px">${r.mitigation||'—'}</td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--mid)">No risks logged.</td></tr>';
+
+  // heat map
+  const hm=document.getElementById('heatMap');
+  if(hm){const levels=['High','Medium','Low'];const cats=['Schedule','Cost','Safety','Quality','External'];
+  hm.innerHTML=cats.map(c=>{const r=risks.find(r=>r.category===c)||{};const lvl=r.impact||'Low';return`<div class="heat-cell heat-${lvl[0]}"><div class="heat-lbl">${c}</div>${lvl}</div>`;}).join('');}
+
+  const actions=allActions();
+  const atbody=document.querySelector('#actionTable tbody');
+  if(atbody)atbody.innerHTML=actions.map((a,i)=>`<tr>
+    <td>${i+1}</td><td>${a.proj}</td><td>${a.issue||'—'}</td>
+    <td><span class="badge ${a.priority==='High'?'br':a.priority==='Medium'?'ba':'bg'}">${a.priority||'—'}</span></td>
+    <td>${a.action||'—'}</td><td>${a.responsible||'—'}</td><td>${a.due_date||'—'}</td>
+    <td><span class="badge ${a.status==='Done'?'bg':a.status==='In Progress'?'ba':'bn'}">${a.status||'Open'}</span></td>
+  </tr>`).join('')||'<tr><td colspan="8" style="color:var(--mid)">No action items.</td></tr>';
+}
+
+// ── CEO ──
+function renderCEO(){
+  const totBudget=PROJECTS.reduce((a,p)=>a+p.budget,0);
+  const totAC=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ac||0),0);
+  const avgProg=PROJECTS.length?PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.progress||0),0)/PROJECTS.length:0;
+  const avgCPI=PROJECTS.length?PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.cpi||0),0)/PROJECTS.length:0;
+  const totInc=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.incidents||0),0);
+  document.getElementById('ceoSnap').innerHTML=[
+    {l:'Projects',v:PROJECTS.length},{l:'Avg Progress',v:avgProg.toFixed(1)+'%'},
+    {l:'Avg CPI',v:avgCPI.toFixed(2)},{l:'Total Budget',v:peso(totBudget)},
+    {l:'Total Spent',v:peso(totAC)},{l:'Incidents',v:totInc}
+  ].map(k=>`<div class="ceo-item"><div class="cl">${k.l}</div><div class="cv">${k.v}</div></div>`).join('');
+
+  document.getElementById('ceoProjects').innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};return`<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <strong>${p.name}</strong><span>${badge(s.health,'health')}</span>
+    </div>
+    <div class="dg">
+      <div class="di"><div class="dl">Progress</div><div class="dv">${pct(s.progress)}</div></div>
+      <div class="di"><div class="dl">CPI</div><div class="dv">${num(s.cpi)}</div></div>
+      <div class="di"><div class="dl">Schedule</div><div class="dv">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</div></div>
+      <div class="di"><div class="dl">Cost</div><div class="dv">${peso(s.ac)}</div></div>
+    </div>
+    ${s.schedule_rec?`<div style="font-size:11px;color:var(--mid);margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">📌 ${s.schedule_rec}</div>`:''}
+  </div>`;}).join('');
+
+  const risks=allRisks().filter(r=>r.impact==='High');
+  document.querySelector('#ceoRecs tbody').innerHTML=risks.length?risks.map((r,i)=>`<tr><td>${i+1}</td><td>${r.desc}</td><td>${r.mitigation||'—'}</td><td>${r.due||'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="color:var(--mid)">No high-impact risks.</td></tr>';
+}
+
+// ── S-CURVE ──
+function renderSCurve(){
+  const container=document.getElementById('scurveProjects');
+  if(container){
+    container.innerHTML=PROJECTS.map((p,i)=>`<div class="card" style="margin-bottom:16px">
+      <div class="card-title">${p.name} — Physical Progress S-Curve</div>
+      <div class="ch"><canvas id="sc_${i}"></canvas></div>
+    </div>`).join('');
+    PROJECTS.forEach((p,i)=>{
+      const s=LATEST[p.id];
+      if(!s||!s.scurve_data||!s.scurve_data.length)return;
+      const d=s.scurve_data;
+      mkChart(`sc_${i}`,'line',{
+        labels:d.map(r=>r.period),
+        datasets:[
+          {label:'Planned%',data:d.map(r=>r.planned),borderColor:'#1E3A6E',tension:.4,pointRadius:2,fill:false},
+          {label:'Actual%',data:d.map(r=>r.actual),borderColor:'#E65100',tension:.4,pointRadius:3,fill:false,spanGaps:false},
+        ]
+      },{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+    });
+  }
+
+  // EVM table
+  const etbody=document.querySelector('#evmTable tbody');
+  if(etbody)etbody.innerHTML=PROJECTS.map(p=>{
+    const s=LATEST[p.id]||{};const bac=p.budget||0;
+    const pv=s.scurve_data&&s.scurve_data.length?s.scurve_data.filter(r=>r.planned_cost).slice(-1)[0]?.planned_cost||0:0;
+    const ev=bac*(s.progress||0)/100;const ac=s.ac||0;
+    const sv=ev-pv;const cv=ev-ac;const spi=pv?ev/pv:0;const cpi=ac?ev/ac:0;
+    const eac=cpi?bac/cpi:bac;const vac=bac-eac;
+    return`<tr><td><strong>${p.name}</strong></td><td>${peso(bac)}</td><td>${peso(pv)}</td><td>${peso(ev)}</td><td>${peso(ac)}</td>
+      <td style="color:${sv>=0?'var(--green)':'var(--red)'}">${peso(sv)}</td>
+      <td style="color:${cv>=0?'var(--green)':'var(--red)'}">${peso(cv)}</td>
+      <td style="color:${spi>=1?'var(--green)':'var(--red)'}">${spi.toFixed(2)}</td>
+      <td style="color:${cpi>=1?'var(--green)':'var(--red)'}">${cpi.toFixed(2)}</td>
+      <td>${peso(eac)}</td><td style="color:${vac>=0?'var(--green)':'var(--red)'}">${peso(vac)}</td></tr>`;
+  }).join('');
+}
+
+// ── HISTORY ──
+function renderHistory(){
+  // history trend charts
+  const histByWeek={};
+  HISTORY.forEach(h=>{if(!histByWeek[h.week_of])histByWeek[h.week_of]=[];histByWeek[h.week_of].push(h);});
+  const weeks=Object.keys(histByWeek).slice(-12);
+  const progTrends=PROJECTS.map(p=>({label:p.name,data:weeks.map(w=>{const e=histByWeek[w]?.find(h=>h.project_id===p.id);return e?.snapshot?.progress||null;}),tension:.4,fill:false}));
+  const colors=['#E65100','#1E3A6E','#1A7A4A','#D4830A','#C0392B'];
+  progTrends.forEach((d,i)=>d.borderColor=colors[i%colors.length]);
+  mkChart('chartHistProg','line',{labels:weeks,datasets:progTrends},{plugins:{legend:{position:'top',labels:{font:{size:9}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  const cpiTrends=PROJECTS.map((p,i)=>({label:p.name,data:weeks.map(w=>{const e=histByWeek[w]?.find(h=>h.project_id===p.id);return e?.snapshot?.cpi||null;}),tension:.4,fill:false,borderColor:colors[i%colors.length]}));
+  mkChart('chartHistCPI','line',{labels:weeks,datasets:cpiTrends},{plugins:{legend:{position:'top',labels:{font:{size:9}}}},scales:{y:{min:0}}});
+
+  const costTrends=PROJECTS.map((p,i)=>({label:p.name,data:weeks.map(w=>{const e=histByWeek[w]?.find(h=>h.project_id===p.id);return e?.snapshot?.ac?e.snapshot.ac/1e6:null;}),tension:.4,fill:false,borderColor:colors[i%colors.length]}));
+  mkChart('chartHistCost','line',{labels:weeks,datasets:costTrends},{plugins:{legend:{position:'top',labels:{font:{size:9}}}},scales:{y:{ticks:{callback:v=>'₱'+v+'M'}}}});
+
+  // log
+  const log=document.getElementById('historyLog');
+  if(!HISTORY.length){log.innerHTML='<div style="text-align:center;padding:40px;color:var(--mid);font-size:13px">📜 No history yet. History is recorded automatically each time the OM approves a weekly update.</div>';return;}
+  const grouped={};
+  HISTORY.forEach(h=>{if(!grouped[h.week_of])grouped[h.week_of]=[];grouped[h.week_of].push(h);});
+  log.innerHTML=Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([week,entries])=>`
+    <div class="tl-entry">
+      <div class="tl-week">Week of ${week}</div>
+      ${entries.map(e=>{const s=e.snapshot||{};const proj=PROJECTS.find(p=>p.id===e.project_id);return`
+        <div class="tl-card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>${proj?.name||'Unknown'}</strong>
+            <span style="font-size:10px;color:var(--mid)">Approved by ${e.approved_by} · ${new Date(e.approved_at).toLocaleDateString()}</span>
+          </div>
+          <div class="tl-row">
+            <div class="tl-item"><div class="tl-l">Progress</div><div class="tl-v">${pct(s.progress)}</div></div>
+            <div class="tl-item"><div class="tl-l">Schedule</div><div class="tl-v">${badge(s.sched_status,'sched')}</div></div>
+            <div class="tl-item"><div class="tl-l">CPI</div><div class="tl-v">${num(s.cpi)}</div></div>
+            <div class="tl-item"><div class="tl-l">Actual Cost</div><div class="tl-v">${peso(s.ac)}</div></div>
+            <div class="tl-item"><div class="tl-l">Incidents</div><div class="tl-v">${s.incidents??'—'}</div></div>
+            <div class="tl-item"><div class="tl-l">SV</div><div class="tl-v" style="color:${(s.sv_days||0)>=0?'var(--green)':'var(--red)'}">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</div></div>
+          </div>
+          ${s.critical_activities?`<div style="font-size:11px;color:var(--mid);margin-top:6px">📌 ${s.critical_activities}</div>`:''}
+        </div>`}).join('')}
+    </div>`).join('');
+}
+
+// ── INIT ──
+loadData();
+</script>
+</body>
+</html>
+<script>
+// ── AI ANALYTICS ──
+
+function buildAIProjectFilter(){
+  const sel = document.getElementById('aiProjectFilter');
+  if(!sel || !PROJECTS.length) return;
+  // Clear existing options except "All"
+  while(sel.options.length > 1) sel.remove(1);
+  PROJECTS.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.name;
+    sel.appendChild(o);
+  });
+}
+
+function buildProjectContext(projId){
+  const isAll = projId === 'all';
+  const projs = isAll ? PROJECTS : PROJECTS.filter(p=>p.id===projId);
+  if(!projs.length) return null;
+
+  return projs.map(p=>{
+    const s = LATEST[p.id] || {};
+    const risks = s.risks || [];
+    const actions = s.action_items || [];
+    const proc = s.procurement || [];
+    const cos = s.change_orders || [];
+    const sc = s.scurve_data || [];
+
+    return `
+PROJECT: ${p.name} (${p.code})
+Location: ${p.location||'—'} | PIC: ${p.pic||'—'}
+Budget: ₱${Number(p.budget||0).toLocaleString()} | Planned Finish: ${p.planned_finish||'—'}
+
+STATUS:
+- Physical Progress: ${s.progress!=null?s.progress+'%':'No data'}
+- Schedule Status: ${s.sched_status||'—'} | SV: ${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+' days':'—'}
+- Health: ${s.health||'—'} | Cost Status: ${s.cost_status||'—'}
+- Critical Activities: ${s.critical_activities||'None'}
+- Schedule Recommendation: ${s.schedule_rec||'None'}
+
+COST:
+- CPI: ${s.cpi||'—'} (>1.0 = good)
+- Actual Cost: ₱${Number(s.ac||0).toLocaleString()}
+- Forecast at Completion: ₱${Number(s.fac||0).toLocaleString()}
+- PA Budget: ₱${Number(s.pa_budget||0).toLocaleString()} | PA Actual: ₱${Number(s.pa_actual||0).toLocaleString()}
+
+SAFETY:
+- Safe Man-Hours: ${s.man_hours||0}
+- Inspections: ${s.ins_done||0}/${s.ins_due||0} done
+- NCR Open: ${s.ncr_open||0} | Incidents: ${s.incidents||0} | Near Miss: ${s.near_miss||0}
+- DDI: ${s.ddi||'—'}% | Last Toolbox: ${s.last_toolbox||'—'}
+- Safety Action: ${s.safety_action||'None'}
+
+PRODUCTIVITY:
+- OT Rate: ${s.ot_rate||'—'}% vs Baseline ${s.ot_baseline||20}%
+- OLC/ALC: ${s.olc_alc||'—'} (<=1.0 = efficient)
+- Ranks Cost: ₱${Number(s.ranks_cost||0).toLocaleString()} | Staff Cost: ₱${Number(s.staff_cost||0).toLocaleString()}
+
+RISKS (${risks.length} logged):
+${risks.map((r,i)=>`${i+1}. [${r.impact}] ${r.desc} — Owner: ${r.owner||'—'}, Due: ${r.due||'—'}, Status: ${r.status||'—'}, Mitigation: ${r.mitigation||'—'}`).join('\n')||'None'}
+
+OPEN ACTION ITEMS (${actions.filter(a=>a.status!=='Done').length} open):
+${actions.filter(a=>a.status!=='Done').map((a,i)=>`${i+1}. [${a.priority}] ${a.issue} — ${a.action||'—'}, Responsible: ${a.responsible||'—'}, Due: ${a.due_date||'—'}`).join('\n')||'None'}
+
+PROCUREMENT (${proc.length} items):
+${proc.map(p=>`- ${p.item}: ${p.status} (Vendor: ${p.vendor||'—'}, Required: ${p.required||'—'})`).join('\n')||'None'}
+
+CHANGE ORDERS (${cos.length} COs, Total: ₱${cos.reduce((a,c)=>a+(parseFloat(c.amount)||0),0).toLocaleString()}):
+${cos.map(c=>`- CO${c.co_no}: ${c.description} ₱${Number(c.amount||0).toLocaleString()} [${c.status}]`).join('\n')||'None'}
+
+S-CURVE DATA (${sc.length} periods, latest: ${sc.filter(r=>r.actual!=null).slice(-1)[0]?.period||'—'})
+${sc.length>0?`Latest actual: ${sc.filter(r=>r.actual!=null).slice(-1)[0]?.actual||'—'}% planned: ${sc.filter(r=>r.actual!=null).slice(-1)[0]?.planned||'—'}%`:'No S-curve data'}
+`.trim();
+  }).join('\n\n---\n\n');
+}
+
+function runLocalAnalysis(projId, type){
+  const isAll = projId === 'all';
+  const projs = isAll ? PROJECTS : PROJECTS.filter(p=>p.id===projId);
+  if(!projs.length) return '<div style="color:rgba(255,255,255,.4);font-size:12px">No project data available.</div>';
+
+  let html = '';
+
+  projs.forEach(p=>{
+    const s = LATEST[p.id] || {};
+    const risks = s.risks || [];
+    const actions = s.action_items || [];
+    const proc = s.procurement || [];
+    const cos = s.change_orders || [];
+    const sc = s.scurve_data || [];
+
+    const progress = parseFloat(s.progress) || 0;
+    const cpi = parseFloat(s.cpi) || 0;
+    const svDays = parseInt(s.sv_days) || 0;
+    const incidents = parseInt(s.incidents) || 0;
+    const ncrOpen = parseInt(s.ncr_open) || 0;
+    const olcAlc = parseFloat(s.olc_alc) || 0;
+    const otRate = parseFloat(s.ot_rate) || 0;
+    const otBase = parseFloat(s.ot_baseline) || 20;
+    const insDue = parseInt(s.ins_due) || 0;
+    const insDone = parseInt(s.ins_done) || 0;
+    const inspRate = insDue > 0 ? Math.round(insDone/insDue*100) : 0;
+    const budget = parseFloat(p.budget) || 0;
+    const ac = parseFloat(s.ac) || 0;
+    const fac = parseFloat(s.fac) || 0;
+    const budgetUsed = budget > 0 ? (ac/budget*100).toFixed(1) : 0;
+    const eac = cpi > 0 ? budget/cpi : budget;
+    const vac = budget - eac;
+    const highRisks = risks.filter(r=>r.impact==='High');
+    const openActions = actions.filter(a=>a.status!=='Done');
+    const delayedProc = proc.filter(p=>p.status==='Delayed');
+
+    // RAG status
+    const schedRAG = svDays >= 0 ? 'chip-g' : svDays >= -7 ? 'chip-a' : 'chip-r';
+    const costRAG = cpi >= 1 ? 'chip-g' : cpi >= 0.9 ? 'chip-a' : 'chip-r';
+    const safetyRAG = incidents === 0 && ncrOpen === 0 ? 'chip-g' : incidents > 0 ? 'chip-r' : 'chip-a';
+    const overallRAG = (cpi < 0.9 || svDays < -7 || incidents > 0) ? 'chip-r' : (cpi < 1 || svDays < 0) ? 'chip-a' : 'chip-g';
+    const overallLabel = overallRAG === 'chip-r' ? 'AT RISK' : overallRAG === 'chip-a' ? 'MONITOR' : 'ON TRACK';
+
+    if(projs.length > 1) html += `<h4>📌 ${p.name}</h4>`;
+
+    if(type === 'risk' || type === 'full'){
+      html += `<h4>Risk Assessment</h4>`;
+      html += `<span class="chip ${overallRAG}">${overallLabel}</span> `;
+      html += `<span class="chip ${schedRAG}">Schedule ${svDays >= 0 ? '+'+svDays+'d Ahead' : svDays+'d Delayed'}</span> `;
+      html += `<span class="chip ${costRAG}">CPI ${cpi.toFixed(2)}</span> `;
+      html += `<span class="chip ${safetyRAG}">Safety ${incidents === 0 ? 'Clean' : incidents+' Incident(s)'}</span>`;
+      html += '<div class="ai-divider"></div>';
+
+      html += '<ul>';
+      if(highRisks.length){
+        highRisks.forEach(r=>{
+          html += `<li><strong>🔴 HIGH: ${r.desc}</strong> — Owner: ${r.owner||'Unassigned'}, Due: ${r.due||'No date'}<br><span style="color:rgba(255,255,255,.5);font-size:11px">Mitigation: ${r.mitigation||'None defined'}</span></li>`;
+        });
+      } else {
+        html += '<li>No high-impact risks currently logged.</li>';
+      }
+      const unmitigated = risks.filter(r=>!r.mitigation||r.mitigation.trim()==='');
+      if(unmitigated.length) html += `<li><strong>⚠ ${unmitigated.length} risk(s) have no mitigation plan defined</strong> — immediate attention required.</li>`;
+      if(incidents > 0) html += `<li><strong>🔴 ${incidents} incident(s) reported this period</strong> — investigate root cause and update safety action plan.</li>`;
+      if(ncrOpen > 0) html += `<li><strong>⚠ ${ncrOpen} NCR(s) open</strong> — resolve before next inspection.</li>`;
+      if(delayedProc.length) html += `<li><strong>📦 ${delayedProc.length} delayed procurement item(s)</strong>: ${delayedProc.map(d=>d.item).join(', ')} — may impact critical path.</li>`;
+      if(openActions.filter(a=>a.priority==='High').length) html += `<li><strong>✅ ${openActions.filter(a=>a.priority==='High').length} high-priority action item(s) pending</strong> — escalate to OM if overdue.</li>`;
+      html += '</ul>';
+
+      html += `<h4>30-Day Outlook</h4><ul>`;
+      html += `<li>Progress expected to reach approximately <strong>${Math.min(100,progress+3).toFixed(1)}%</strong> at current rate.</li>`;
+      if(cpi < 1) html += `<li>Cost overrun trajectory — EAC of <strong>₱${(eac/1e6).toFixed(1)}M</strong> vs budget <strong>₱${(budget/1e6).toFixed(1)}M</strong> (variance: <strong style="color:#FF8A80">₱${(Math.abs(vac)/1e6).toFixed(1)}M over</strong>).</li>`;
+      if(svDays < 0) html += `<li>Schedule recovery needed — currently <strong>${Math.abs(svDays)} days behind</strong>. Evaluate acceleration options.</li>`;
+      if(risks.filter(r=>r.status==='Active').length > 2) html += `<li><strong>${risks.filter(r=>r.status==='Active').length} active risks</strong> require weekly monitoring.</li>`;
+      html += '</ul>';
+    }
+
+    if(type === 'schedule' || type === 'full'){
+      html += `<h4>Schedule Analysis</h4>`;
+      const latestSC = sc.filter(r=>r.actual!=null).slice(-1)[0];
+      const prevSC = sc.filter(r=>r.actual!=null).slice(-2)[0];
+      const trend = latestSC && prevSC ? (latestSC.actual - prevSC.actual - (latestSC.planned - prevSC.planned)) : 0;
+      html += `<ul>`;
+      html += `<li>Physical progress: <strong>${progress}%</strong> | Schedule variance: <strong class="${svDays>=0?'':'"}' style="color:${svDays>=0?'#69F0AE':'#FF8A80'}">${svDays>=0?'+':''}${svDays} days</strong></li>`;
+      html += `<li>Planned finish: <strong>${s.planned_finish||p.planned_finish||'—'}</strong> | Forecast finish: <strong>${s.forecast_finish||p.forecast_finish||'—'}</strong></li>`;
+      if(s.critical_activities) html += `<li>Critical activities: <strong>${s.critical_activities}</strong></li>`;
+      if(latestSC) html += `<li>Latest S-curve: Actual <strong>${latestSC.actual}%</strong> vs Planned <strong>${latestSC.planned}%</strong> at ${latestSC.period} — <strong style="color:${latestSC.actual>=latestSC.planned?'#69F0AE':'#FF8A80'}">${latestSC.actual>=latestSC.planned?'Ahead of':'Behind'} plan by ${Math.abs(latestSC.actual-latestSC.planned).toFixed(2)}%</strong></li>`;
+      if(trend > 0) html += `<li>Trend: <strong style="color:#69F0AE">Gaining momentum</strong> — actual progress accelerating vs plan.</li>`;
+      else if(trend < -0.5) html += `<li>Trend: <strong style="color:#FF8A80">Slowing down</strong> — actual progress falling behind plan rate.</li>`;
+      if(s.schedule_rec && s.schedule_rec !== 'None') html += `<li>PM recommendation: <em>${s.schedule_rec}</em></li>`;
+      html += '</ul>';
+    }
+
+    if(type === 'cost' || type === 'full'){
+      html += `<h4>Cost & CPI Analysis</h4>`;
+      html += `<ul>`;
+      html += `<li>CPI: <strong style="color:${cpi>=1?'#69F0AE':cpi>=0.9?'#FFD54F':'#FF8A80'}">${cpi.toFixed(2)}</strong> — ${cpi>=1?'Performing within budget (cost-efficient)':cpi>=0.9?'Slightly over budget — monitor closely':'Cost overrun — corrective action required'}</li>`;
+      html += `<li>Actual cost: <strong>₱${(ac/1e6).toFixed(2)}M</strong> of <strong>₱${(budget/1e6).toFixed(2)}M</strong> budget (${budgetUsed}% utilized)</li>`;
+      if(fac > 0) html += `<li>Forecast at completion: <strong>₱${(fac/1e6).toFixed(2)}M</strong> | EAC based on CPI: <strong style="color:${eac<=budget?'#69F0AE':'#FF8A80'}">₱${(eac/1e6).toFixed(2)}M</strong></li>`;
+      if(vac < 0) html += `<li><strong style="color:#FF8A80">Budget at risk: ₱${(Math.abs(vac)/1e6).toFixed(2)}M projected overrun</strong> — escalate to OM.</li>`;
+      if(olcAlc > 0) html += `<li>Labor efficiency (OLC/ALC): <strong style="color:${olcAlc<=1?'#69F0AE':'#FF8A80'}">${olcAlc.toFixed(3)}</strong> — ${olcAlc<=1?'Labor is productive (output ≥ cost)':'Labor underperforming (output < cost)'}</li>`;
+      if(otRate > otBase) html += `<li><strong style="color:#FFD54F">OT rate ${otRate}% exceeds baseline ${otBase}%</strong> — review overtime causes.</li>`;
+      if(cos.length) html += `<li>Change orders: <strong>${cos.length} CO(s)</strong> totaling <strong>₱${(cos.reduce((a,c)=>a+(parseFloat(c.amount)||0),0)/1e6).toFixed(2)}M</strong></li>`;
+      html += '</ul>';
+    }
+
+    if(type === 'safety' || type === 'full'){
+      html += `<h4>Safety Analysis</h4>`;
+      html += `<ul>`;
+      html += `<li>Safe man-hours: <strong>${Number(s.man_hours||0).toLocaleString()}</strong> cumulative</li>`;
+      html += `<li>Inspections: <strong>${insDone}/${insDue}</strong> completed (<strong style="color:${inspRate>=80?'#69F0AE':inspRate>=50?'#FFD54F':'#FF8A80'}">${inspRate}% rate</strong>)${inspRate<80?' — increase inspection frequency':''}</li>`;
+      html += `<li>Incidents: <strong style="color:${incidents===0?'#69F0AE':'#FF8A80'}">${incidents}</strong> | Near miss: <strong>${s.near_miss||0}</strong> | NCR open: <strong style="color:${ncrOpen===0?'#69F0AE':'#FFD54F'}">${ncrOpen}</strong></li>`;
+      if(s.ddi) html += `<li>DDI: <strong>${s.ddi}%</strong> — ${parseFloat(s.ddi)>=85?'Good deployment':'Review workforce deployment'}</li>`;
+      if(s.last_toolbox) html += `<li>Last toolbox meeting: <strong>${s.last_toolbox}</strong></li>`;
+      if(s.safety_action) html += `<li>Safety action: <em>${s.safety_action}</em></li>`;
+      if(incidents > 0) html += `<li><strong>🔴 Action required:</strong> Investigate incident root cause, review safety protocols, brief all workers.</li>`;
+      if(inspRate < 80) html += `<li><strong>⚠ Inspection gap:</strong> ${insDue-insDone} inspection(s) not completed — schedule immediately.</li>`;
+      html += '</ul>';
+    }
+
+    if(type === 'executive'){
+      html += `<h4>Executive Snapshot — ${p.name}</h4>`;
+      html += `<span class="chip ${overallRAG}">${overallLabel}</span><br><br>`;
+      html += `<ul>`;
+      html += `<li>Progress: <strong>${progress}%</strong> | Schedule: <strong style="color:${svDays>=0?'#69F0AE':'#FF8A80'}">${svDays>=0?'+':''}${svDays}d</strong> | CPI: <strong style="color:${cpi>=1?'#69F0AE':'#FF8A80'}">${cpi.toFixed(2)}</strong></li>`;
+      html += `<li>Budget: ₱${(budget/1e6).toFixed(1)}M | Spent: ₱${(ac/1e6).toFixed(1)}M (${budgetUsed}%)</li>`;
+      html += `<li>Safety: ${incidents===0?'✅ No incidents':'🔴 '+incidents+' incident(s)'} | Inspections: ${inspRate}%</li>`;
+      html += `<li>Open risks: <strong>${highRisks.length} high</strong> | Open actions: <strong>${openActions.length}</strong></li>`;
+      html += '</ul>';
+      if(highRisks.length || svDays < 0 || cpi < 1 || incidents > 0){
+        html += `<h4>OM Directives — Next 7 Days</h4><ul>`;
+        if(highRisks.length) html += `<li>Review and act on <strong>${highRisks.length} high-impact risk(s)</strong> with assigned owners.</li>`;
+        if(svDays < 0) html += `<li>Convene schedule recovery meeting — ${Math.abs(svDays)} days behind.</li>`;
+        if(cpi < 1) html += `<li>Cost review with PM — CPI at ${cpi.toFixed(2)}, projected overrun of ₱${(Math.abs(vac)/1e6).toFixed(1)}M.</li>`;
+        if(incidents > 0) html += `<li>Mandatory safety stand-down — ${incidents} incident(s) this period.</li>`;
+        html += '</ul>';
+      }
+    }
+
+    if(projs.length > 1) html += '<div class="ai-divider"></div>';
+  });
+
+  return `<div class="ai-result">${html}</div>`;
+}
+
+async function runAIAnalysis(){
+  const projId = document.getElementById('aiProjectFilter').value;
+  const type = document.getElementById('aiAnalysisType').value;
+  const btn = document.getElementById('btnRunAI');
+  const output = document.getElementById('aiOutput');
+  const meta = document.getElementById('aiMeta');
+
+  const isAll = projId === 'all';
+  const projs = isAll ? PROJECTS : PROJECTS.filter(p=>p.id===projId);
+  if(!projs.length || !Object.keys(LATEST).length){
+    output.innerHTML='<div style="color:rgba(255,255,255,.4);font-size:12px;padding:16px 0">No approved project data available yet. OM must approve at least one weekly submission first.</div>';
+    return;
+  }
+
+  btn.disabled=true;
+  btn.textContent='⏳ Analyzing…';
+  output.innerHTML=`<div class="ai-thinking"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>Analyzing project data…</span></div>`;
+  meta.textContent='';
+
+  const projName = isAll ? 'All Projects' : PROJECTS.find(p=>p.id===projId)?.name||'Project';
+  const typeLabel = document.getElementById('aiAnalysisType').selectedOptions[0].text;
+
+  await new Promise(r=>setTimeout(r,600)); // brief pause for UX
+  const start = Date.now();
+  const html = runLocalAnalysis(projId, type);
+  const elapsed = ((Date.now()-start)/1000).toFixed(1);
+  output.innerHTML = html;
+  meta.textContent = `Analysis: ${typeLabel} · ${projName} · ${new Date().toLocaleTimeString()}`;
+  btn.disabled=false;
+  btn.textContent='⚡ Analyze';
+}
+
+// Patch lazyRender to build project filter when risks panel opens
+const _origLazyRender = lazyRender;
+lazyRender = function(panel){
+  _origLazyRender(panel);
+  if(panel==='risks') buildAIProjectFilter();
+};
+</script>
