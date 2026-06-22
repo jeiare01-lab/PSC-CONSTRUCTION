@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PSC Construction — Admin Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --navy:#0D1B3D;--steel:#1E3A6E;--orange:#E65100;--gold:#F5A623;
@@ -183,6 +184,32 @@ main{flex:1;background:var(--cream);overflow-x:hidden;padding:20px;}
     <main>
       <!-- META -->
       <div class="panel active" id="panel-meta">
+
+        <!-- UPLOAD CARD -->
+        <div class="card" style="border-left:4px solid var(--orange);margin-bottom:18px">
+          <div class="card-title">📤 Upload Weekly Report Template (Excel)</div>
+          <div style="font-size:12px;color:var(--mid);margin-bottom:12px">Upload the PSC Weekly Report Template (.xlsx). Data will be read automatically and pre-fill all form fields. Review before submitting to OM.</div>
+          <div id="uploadZone" onclick="document.getElementById('xlsxUpload').click()"
+            style="border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;background:var(--mist);transition:all .2s"
+            ondragover="event.preventDefault();this.style.borderColor='var(--orange)'"
+            ondragleave="this.style.borderColor='var(--border)'"
+            ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleXlsxDrop(event)">
+            <div style="font-size:28px;margin-bottom:8px">📊</div>
+            <div style="font-size:13px;font-weight:700;color:var(--navy)">Click or drag & drop your Excel file here</div>
+            <div style="font-size:11px;color:var(--mid);margin-top:4px">PSC_Weekly_Report_Template.xlsx</div>
+          </div>
+          <input type="file" id="xlsxUpload" accept=".xlsx,.xls" style="display:none" onchange="handleXlsxFile(this.files[0])">
+          <div id="uploadStatus" style="margin-top:10px;font-size:12px;display:none"></div>
+          <div id="uploadPreview" style="margin-top:14px;display:none">
+            <div style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Parsed Data Preview</div>
+            <div id="previewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px"></div>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary" id="btnApplyUpload" onclick="applyUploadedData()">✅ Apply to Forms</button>
+              <button class="btn btn-ghost" onclick="clearUpload()">✕ Clear</button>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-title">Weekly Report Info — Update before each submission</div>
           <div class="two">
@@ -947,4 +974,337 @@ nav = function(el) {
   _origNav(el);
   if (el.dataset.panel === 'users') loadUsers();
 };
+</script>
+<script>
+// ── EXCEL UPLOAD & PARSE ──
+let uploadedData = {};
+
+function handleXlsxDrop(e){
+  const file = e.dataTransfer.files[0];
+  if(file) handleXlsxFile(file);
+}
+
+function handleXlsxFile(file){
+  if(!file){ return; }
+  const status = document.getElementById('uploadStatus');
+  status.style.display='block';
+  status.innerHTML='<span style="color:var(--amber)">⏳ Reading file…</span>';
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      uploadedData = parseTemplate(wb);
+      showPreview(uploadedData);
+      status.innerHTML='<span style="color:var(--green)">✅ File read successfully — review below then click Apply to Forms</span>';
+    } catch(err){
+      status.innerHTML='<span style="color:var(--red)">❌ Error reading file: '+err.message+'</span>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function sheetVal(ws, addr){
+  const cell = ws[addr];
+  return cell ? String(cell.v ?? '').trim() : '';
+}
+
+function parseTemplate(wb){
+  const d = {};
+
+  // COVER sheet (B4:B10 = project name, code, week, prepby, verby, srcfile, fileloc)
+  const cover = wb.Sheets['COVER'];
+  if(cover){
+    d.project_name   = sheetVal(cover,'B4');
+    d.project_code   = sheetVal(cover,'B5');
+    d.week_of        = sheetVal(cover,'B6');
+    d.prepared_by    = sheetVal(cover,'B7');
+    d.verified_by    = sheetVal(cover,'B8');
+    d.source_file    = sheetVal(cover,'B9');
+    d.file_location  = sheetVal(cover,'B10');
+  }
+
+  // STATUS & SCHEDULE sheet (B3:B9 = progress, sched_status, health, cost_status, critical, rec; B12:B14 = sv, planned_finish, forecast)
+  const ss = wb.Sheets['STATUS & SCHEDULE'];
+  if(ss){
+    d.progress            = sheetVal(ss,'B3');
+    d.sched_status        = sheetVal(ss,'B4');
+    d.health              = sheetVal(ss,'B5');
+    d.cost_status         = sheetVal(ss,'B6');
+    d.critical_activities = sheetVal(ss,'B7');
+    d.schedule_rec        = sheetVal(ss,'B8');
+    d.sv_days             = sheetVal(ss,'B12');
+    d.planned_finish      = sheetVal(ss,'B13');
+    d.forecast_finish     = sheetVal(ss,'B14');
+  }
+
+  // COST & CPI (B3:B7)
+  const cost = wb.Sheets['COST & CPI'];
+  if(cost){
+    d.cpi        = sheetVal(cost,'B3');
+    d.ac         = sheetVal(cost,'B4');
+    d.fac        = sheetVal(cost,'B5');
+    d.pa_budget  = sheetVal(cost,'B6');
+    d.pa_actual  = sheetVal(cost,'B7');
+  }
+
+  // SAFETY (B3:B11)
+  const safety = wb.Sheets['SAFETY'];
+  if(safety){
+    d.man_hours    = sheetVal(safety,'B3');
+    d.ins_due      = sheetVal(safety,'B4');
+    d.ins_done     = sheetVal(safety,'B5');
+    d.ncr_open     = sheetVal(safety,'B6');
+    d.incidents    = sheetVal(safety,'B7');
+    d.near_miss    = sheetVal(safety,'B8');
+    d.last_toolbox = sheetVal(safety,'B9');
+    d.ddi          = sheetVal(safety,'B10');
+    d.safety_action= sheetVal(safety,'B11');
+  }
+
+  // SCOREBOARD (B3:B8)
+  const sb = wb.Sheets['SCOREBOARD'];
+  if(sb){
+    d.ot_rate    = sheetVal(sb,'B3');
+    d.ot_baseline= sheetVal(sb,'B4');
+    d.olc_alc    = sheetVal(sb,'B5');
+    d.ranks_cost = sheetVal(sb,'B6');
+    d.staff_cost = sheetVal(sb,'B7');
+    d.output_lc  = sheetVal(sb,'B8');
+  }
+
+  // S-CURVE DATA (rows 3+, cols A-E)
+  const sc = wb.Sheets['S-CURVE DATA'];
+  if(sc){
+    d.scurve_data = [];
+    for(let r=3; r<=30; r++){
+      const period = sheetVal(sc,'A'+r);
+      if(!period) break;
+      d.scurve_data.push({
+        period,
+        planned:      sheetVal(sc,'B'+r),
+        actual:       sheetVal(sc,'C'+r),
+        planned_cost: sheetVal(sc,'D'+r),
+        actual_cost:  sheetVal(sc,'E'+r),
+      });
+    }
+  }
+
+  // PROCUREMENT (rows 4+, cols A-G)
+  const proc = wb.Sheets['PROCUREMENT'];
+  if(proc){
+    d.procurement = [];
+    for(let r=4; r<=30; r++){
+      const item = sheetVal(proc,'A'+r);
+      if(!item) break;
+      d.procurement.push({
+        item,
+        vendor:   sheetVal(proc,'B'+r),
+        required: sheetVal(proc,'C'+r),
+        delivery: sheetVal(proc,'D'+r),
+        status:   sheetVal(proc,'E'+r),
+        buffer:   sheetVal(proc,'F'+r),
+        remarks:  sheetVal(proc,'G'+r),
+      });
+    }
+  }
+
+  // CHANGE ORDERS (rows 4+, cols A-D)
+  const co = wb.Sheets['CHANGE ORDERS'];
+  if(co){
+    d.change_orders = [];
+    for(let r=4; r<=20; r++){
+      const co_no = sheetVal(co,'A'+r);
+      if(!co_no) break;
+      d.change_orders.push({
+        co_no,
+        description: sheetVal(co,'B'+r),
+        amount:      sheetVal(co,'C'+r),
+        status:      sheetVal(co,'D'+r),
+      });
+    }
+  }
+
+  // RISKS (rows 4+, cols A-F)
+  const risks = wb.Sheets['RISKS'];
+  if(risks){
+    d.risks = [];
+    for(let r=4; r<=20; r++){
+      const desc = sheetVal(risks,'A'+r);
+      if(!desc) break;
+      d.risks.push({
+        desc,
+        impact:     sheetVal(risks,'B'+r),
+        status:     sheetVal(risks,'C'+r),
+        owner:      sheetVal(risks,'D'+r),
+        due:        sheetVal(risks,'E'+r),
+        mitigation: sheetVal(risks,'F'+r),
+      });
+    }
+  }
+
+  // ACTION ITEMS (rows 4+, cols A-F)
+  const ai = wb.Sheets['ACTION ITEMS'];
+  if(ai){
+    d.action_items = [];
+    for(let r=4; r<=20; r++){
+      const issue = sheetVal(ai,'A'+r);
+      if(!issue) break;
+      d.action_items.push({
+        issue,
+        priority:    sheetVal(ai,'B'+r),
+        action:      sheetVal(ai,'C'+r),
+        responsible: sheetVal(ai,'D'+r),
+        due_date:    sheetVal(ai,'E'+r),
+        status:      sheetVal(ai,'F'+r),
+      });
+    }
+  }
+
+  return d;
+}
+
+function showPreview(d){
+  const preview = document.getElementById('uploadPreview');
+  const grid = document.getElementById('previewGrid');
+  const fields = [
+    ['Project',d.project_name],['Week Of',d.week_of],['Prepared By',d.prepared_by],
+    ['Progress',d.progress?d.progress+'%':'—'],['Schedule',d.sched_status||'—'],
+    ['Health',d.health||'—'],['CPI',d.cpi||'—'],['Actual Cost',d.ac?'₱'+Number(d.ac).toLocaleString():'—'],
+    ['Incidents',d.incidents||'0'],['SV Days',d.sv_days||'—'],
+    ['S-Curve Rows',(d.scurve_data||[]).length],['Procurement Items',(d.procurement||[]).length],
+    ['Change Orders',(d.change_orders||[]).length],['Risks',(d.risks||[]).length],
+    ['Action Items',(d.action_items||[]).length],
+  ];
+  grid.innerHTML = fields.map(([l,v])=>`
+    <div style="background:var(--mist);border-radius:6px;padding:9px 11px">
+      <div style="font-size:9px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.07em">${l}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-top:2px">${v||'—'}</div>
+    </div>`).join('');
+  preview.style.display='block';
+}
+
+function applyUploadedData(){
+  const d = uploadedData;
+  if(!d || !Object.keys(d).length){ toast('No data to apply','err'); return; }
+
+  // Find matching project by name or code
+  const proj = PROJECTS.find(p =>
+    p.name.toLowerCase()===String(d.project_name||'').toLowerCase() ||
+    p.code.toLowerCase()===String(d.project_code||'').toLowerCase()
+  );
+
+  if(!proj){ toast('Project "'+d.project_name+'" not found. Check project name in COVER sheet matches exactly.','err'); return; }
+  if(!canEdit(proj)){ toast('You are not assigned to this project.','err'); return; }
+
+  const pid = proj.id;
+
+  // Fill meta fields
+  if(d.week_of)       { const e=document.getElementById('m_weekOf'); if(e) e.value=d.week_of; }
+  if(d.prepared_by)   { const e=document.getElementById('m_prepBy'); if(e) e.value=d.prepared_by; }
+  if(d.verified_by)   { const e=document.getElementById('m_verBy');  if(e) e.value=d.verified_by; }
+  if(d.source_file)   { const e=document.getElementById('m_srcFile'); if(e) e.value=d.source_file; }
+  if(d.file_location) { const e=document.getElementById('m_fileLoc'); if(e) e.value=d.file_location; }
+
+  // Helper to set field
+  const sf = (id, val) => { const e=document.getElementById(id); if(e&&val!==undefined&&val!=='') e.value=val; };
+
+  // Status
+  sf(pid+'_prog', d.progress); sf(pid+'_ss', d.sched_status); sf(pid+'_hl', d.health);
+  sf(pid+'_cs', d.cost_status); sf(pid+'_ca', d.critical_activities); sf(pid+'_sr', d.schedule_rec);
+
+  // Schedule
+  sf(pid+'_sv', d.sv_days); sf(pid+'_pf', d.planned_finish); sf(pid+'_ff', d.forecast_finish);
+
+  // Cost
+  sf(pid+'_cpi', d.cpi); sf(pid+'_ac', d.ac); sf(pid+'_fac', d.fac);
+  sf(pid+'_pab', d.pa_budget); sf(pid+'_paa', d.pa_actual);
+
+  // Safety
+  sf(pid+'_mh', d.man_hours); sf(pid+'_idue', d.ins_due); sf(pid+'_idone', d.ins_done);
+  sf(pid+'_ncr', d.ncr_open); sf(pid+'_inc', d.incidents); sf(pid+'_nm', d.near_miss);
+  sf(pid+'_tb', d.last_toolbox); sf(pid+'_ddi', d.ddi); sf(pid+'_sa', d.safety_action);
+
+  // Scoreboard
+  sf(pid+'_otr', d.ot_rate); sf(pid+'_otb', d.ot_baseline); sf(pid+'_olc', d.olc_alc);
+  sf(pid+'_rc', d.ranks_cost); sf(pid+'_sc', d.staff_cost); sf(pid+'_olcc', d.output_lc);
+
+  // S-Curve — rebuild table
+  const scTbody = document.querySelector('#'+pid+'_sct tbody');
+  if(scTbody && d.scurve_data && d.scurve_data.length){
+    scTbody.innerHTML = d.scurve_data.map(r=>`<tr>
+      <td><input value="${r.period||''}"></td>
+      <td><input type="number" step="0.01" value="${r.planned||''}"></td>
+      <td><input type="number" step="0.01" value="${r.actual||''}"></td>
+      <td><input type="number" value="${r.planned_cost||''}"></td>
+      <td><input type="number" value="${r.actual_cost||''}"></td>
+      <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+    </tr>`).join('');
+  }
+
+  // Procurement — rebuild table
+  const procTbody = document.querySelector('#'+pid+'_pt tbody');
+  if(procTbody && d.procurement && d.procurement.length){
+    procTbody.innerHTML = d.procurement.map(r=>`<tr>
+      <td><input value="${r.item||''}"></td><td><input value="${r.vendor||''}"></td>
+      <td><input value="${r.required||''}"></td><td><input value="${r.delivery||''}"></td>
+      <td><select>${['Delivered','In Progress','Delayed','Pending'].map(o=>`<option ${r.status===o?'selected':''}>${o}</option>`).join('')}</select></td>
+      <td><input value="${r.buffer||''}"></td><td><input value="${r.remarks||''}"></td>
+      <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+    </tr>`).join('');
+  }
+
+  // Change Orders — rebuild table
+  const coTbody = document.querySelector('#'+pid+'_cot tbody');
+  if(coTbody && d.change_orders && d.change_orders.length){
+    coTbody.innerHTML = d.change_orders.map(r=>`<tr>
+      <td><input value="${r.co_no||''}"></td><td><input value="${r.description||''}"></td>
+      <td><input type="number" value="${r.amount||''}"></td>
+      <td><select>${['Pending','Approved','Rejected'].map(o=>`<option ${r.status===o?'selected':''}>${o}</option>`).join('')}</select></td>
+      <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+    </tr>`).join('');
+  }
+
+  // Risks — rebuild table
+  const riskTbody = document.querySelector('#'+pid+'_rt tbody');
+  if(riskTbody && d.risks && d.risks.length){
+    riskTbody.innerHTML = d.risks.map(r=>`<tr>
+      <td><input value="${r.desc||''}"></td>
+      <td><select>${['High','Medium','Low'].map(o=>`<option ${r.impact===o?'selected':''}>${o}</option>`).join('')}</select></td>
+      <td><select>${['Active','Ongoing','Monitoring','Closed'].map(o=>`<option ${r.status===o?'selected':''}>${o}</option>`).join('')}</select></td>
+      <td><input value="${r.owner||''}"></td><td><input value="${r.due||''}"></td>
+      <td><input value="${r.mitigation||''}"></td>
+      <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+    </tr>`).join('');
+  }
+
+  // Action Items — rebuild table
+  const aiTbody = document.querySelector('#'+pid+'_at tbody');
+  if(aiTbody && d.action_items && d.action_items.length){
+    aiTbody.innerHTML = d.action_items.map(r=>`<tr>
+      <td><input value="${r.issue||''}"></td>
+      <td><select>${['High','Medium','Low'].map(o=>`<option ${r.priority===o?'selected':''}>${o}</option>`).join('')}</select></td>
+      <td><input value="${r.action||''}"></td><td><input value="${r.responsible||''}"></td>
+      <td><input value="${r.due_date||''}"></td>
+      <td><select>${['Open','In Progress','Done'].map(o=>`<option ${r.status===o?'selected':''}>${o}</option>`).join('')}</select></td>
+      <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+    </tr>`).join('');
+  }
+
+  toast('✅ Data applied to '+proj.name+' — review and click Submit for OM Approval','ok');
+  clearUpload();
+
+  // Switch to status tab to show filled data
+  const statusNav = document.querySelector('[data-panel="status"]');
+  if(statusNav) nav(statusNav);
+}
+
+function clearUpload(){
+  uploadedData={};
+  document.getElementById('xlsxUpload').value='';
+  document.getElementById('uploadPreview').style.display='none';
+  document.getElementById('uploadStatus').style.display='none';
+  document.getElementById('uploadZone').style.borderColor='var(--border)';
+}
 </script>
