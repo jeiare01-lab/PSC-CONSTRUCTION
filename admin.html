@@ -390,7 +390,7 @@ async function doLogin(){
   console.log('Login attempt:', JSON.stringify({user, pin, uLen:user.length, pLen:pin.length}));
   try{
     const allUsers=await sbGet('psc_users','select=*'); const users=allUsers.filter(u=>u.username===user);
-    toast('Got '+users.length+' users', '');
+    toast('All:'+allUsers.length+' filtered:'+users.length, '');
     console.log('Supabase returned:', JSON.stringify(users));    if(!users.length){toast('User not found','err');return;}
     const dbPin = String(users[0].pin).trim();
     const entPin = String(pin).trim();
