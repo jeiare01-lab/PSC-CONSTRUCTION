@@ -389,12 +389,13 @@ async function doLogin(){
   // Debug: remove after login works
   console.log('Login attempt:', JSON.stringify({user, pin, uLen:user.length, pLen:pin.length}));
   try{
-    const users=await sbGet('psc_users',`username=eq.${encodeURIComponent(user)}`);
+    const allUsers=await sbGet('psc_users','select=*'); const users=allUsers.filter(u=>u.username===user);
+    toast('Got '+users.length+' users', '');
     console.log('Supabase returned:', JSON.stringify(users));    if(!users.length){toast('User not found','err');return;}
     const dbPin = String(users[0].pin).trim();
     const entPin = String(pin).trim();
     console.log('PIN compare:', JSON.stringify({dbPin, entPin, match: dbPin===entPin}));
-    if(dbPin!==entPin){toast('Invalid PIN','err');return;}
+    if(dbPin!==entPin){toast('PIN mismatch — db:'+dbPin+' entered:'+entPin,'err');return;}
     if(users[0].is_active===false){toast('Account is inactive','err');return;}
     USER=users[0];
     document.getElementById('loginWrap').style.display='none';
@@ -407,7 +408,7 @@ async function doLogin(){
       document.querySelectorAll('.om-only').forEach(el=>el.style.display='flex');
     }
     await loadAll();
-  }catch(e){toast('Login error: '+e.message,'err');}
+  }catch(e){toast('ERR: '+e.message,'err');}
 }
 function doLogout(){USER=null;document.getElementById('loginWrap').style.display='flex';document.getElementById('app').classList.remove('show');}
 
