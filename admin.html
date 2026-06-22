@@ -384,20 +384,18 @@ function canEdit(p){return USER&&(USER.role==='om'||(USER.project_ids&&USER.proj
 
 // ── LOGIN ──
 async function doLogin(){
-  const user=gv('loginUser').trim(),pin=gv('loginPin').trim();
+  const user=gv('loginUser').trim(), pin=gv('loginPin').trim();
   if(!user||!pin){toast('Enter username and PIN','err');return;}
-  // Debug: remove after login works
-  console.log('Login attempt:', JSON.stringify({user, pin, uLen:user.length, pLen:pin.length}));
   try{
-    const allUsers=await sbGet('psc_users','select=*'); const users=allUsers.filter(u=>u.username===user);
-    toast('All:'+allUsers.length+' filtered:'+users.length, '');
-    console.log('Supabase returned:', JSON.stringify(users));    if(!users.length){toast('User not found','err');return;}
-    const dbPin = String(users[0].pin).trim();
-    const entPin = String(pin).trim();
-    console.log('PIN compare:', JSON.stringify({dbPin, entPin, match: dbPin===entPin}));
-    if(dbPin!==entPin){toast('PIN mismatch — db:'+dbPin+' entered:'+entPin,'err');return;}
-    if(users[0].is_active===false){toast('Account is inactive','err');return;}
-    USER=users[0];
+    const resp = await fetch(SUPABASE_URL+'/rest/v1/psc_users?select=*',{headers:H});
+    const allUsers = await resp.json();
+    if(!Array.isArray(allUsers)){toast('ERR: '+JSON.stringify(allUsers),'err');return;}
+    toast('Fetched '+allUsers.length+' users','');
+    await new Promise(r=>setTimeout(r,1500));
+    const match = allUsers.find(u=>String(u.username).trim()===user && String(u.pin).trim()===pin);
+    if(!match){toast('Invalid credentials','err');return;}
+    if(match.is_active===false){toast('Account inactive','err');return;}
+    USER=match;
     document.getElementById('loginWrap').style.display='none';
     document.getElementById('app').classList.add('show');
     document.getElementById('userPill').textContent=USER.display_name;
