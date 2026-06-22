@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSC Construction Dashboard — ROPA DOS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy:   #0D1B3D;
+    --cream:  #FEF9F3;
+    --orange: #E65100;
+    --gold:   #F5A623;
+    --steel:  #2A3F6B;
+    --mist:   #EAF0FB;
+    --green:  #1A7A4A;
+    --red:    #C0392B;
+    --amber:  #D4830A;
+    --text:   #1A1A2E;
+    --mid:    #6B7A99;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--navy); color: var(--text); min-height: 100vh; }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--navy);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 3px solid var(--orange);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .logo-mark {
+    background: var(--orange);
+    color: #fff;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: .08em;
+    padding: 6px 10px;
+    border-radius: 4px;
+  }
+  .project-title { color: #fff; }
+  .project-title h1 { font-size: 15px; font-weight: 700; letter-spacing: .06em; }
+  .project-title p { font-size: 11px; color: var(--gold); letter-spacing: .04em; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .week-badge {
+    background: rgba(255,255,255,.08);
+    color: var(--cream);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.15);
+  }
+  .btn-admin {
+    background: var(--orange);
+    color: #fff;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: .04em;
+  }
+  .btn-admin:hover { background: #bf4700; }
+
+  /* TABS */
+  .tabs {
+    background: var(--steel);
+    display: flex; gap: 0;
+    padding: 0 24px;
+  }
+  .tab {
+    color: rgba(255,255,255,.55);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    padding: 11px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+    text-transform: uppercase;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab:hover:not(.active) { color: #fff; }
+
+  /* MAIN */
+  main { background: var(--cream); min-height: calc(100vh - 120px); padding: 24px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* KPI ROW */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .kpi {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px 18px;
+    border-left: 4px solid var(--navy);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .kpi.orange { border-left-color: var(--orange); }
+  .kpi.green  { border-left-color: var(--green); }
+  .kpi.amber  { border-left-color: var(--amber); }
+  .kpi.red    { border-left-color: var(--red); }
+  .kpi-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--mid); text-transform: uppercase; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1; }
+  .kpi-sub   { font-size: 11px; color: var(--mid); margin-top: 4px; }
+
+  /* STATUS BADGES */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .badge-green  { background: #D4F0E3; color: var(--green); }
+  .badge-amber  { background: #FDF0D5; color: var(--amber); }
+  .badge-red    { background: #FAE0DE; color: var(--red); }
+  .badge-navy   { background: var(--mist); color: var(--navy); }
+
+  /* SECTION HEADERS */
+  .section-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin: 24px 0 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-header::after { content: ''; flex: 1; height: 1px; background: #E0E7EF; }
+
+  /* TWO-COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media(max-width:700px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* CARDS */
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .card h3 { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--mid); text-transform: uppercase; margin-bottom: 14px; }
+
+  /* CHART CONTAINER */
+  .chart-wrap { position: relative; height: 280px; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--mist); color: var(--navy); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 9px 12px; text-align: left; }
+  td { padding: 9px 12px; border-bottom: 1px solid #EDF1F7; color: var(--text); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F7F9FC; }
+
+  /* PROGRESS BAR */
+  .prog-bar { background: #E0E7EF; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 6px; }
+  .prog-fill { height: 100%; border-radius: 4px; background: var(--orange); transition: width .4s; }
+  .prog-fill.green { background: var(--green); }
+  .prog-fill.amber { background: var(--amber); }
+
+  /* DETAIL ROW */
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .detail-item { padding: 12px 14px; background: var(--mist); border-radius: 6px; }
+  .detail-item .label { font-size: 10px; font-weight: 700; color: var(--mid); text-transform: uppercase; letter-spacing: .07em; }
+  .detail-item .val   { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 3px; }
+
+  /* ADMIN MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); z-index: 999;
+    align-items: flex-start; justify-content: center;
+    padding: 40px 16px; overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 10px;
+    width: 100%; max-width: 660px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.25);
+  }
+  .modal-head {
+    background: var(--navy);
+    color: #fff;
+    padding: 16px 22px;
+    border-radius: 10px 10px 0 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-head h2 { font-size: 14px; font-weight: 700; letter-spacing: .05em; }
+  .modal-head button { background: none; border: none; color: rgba(255,255,255,.7); font-size: 20px; cursor: pointer; }
+  .modal-body { padding: 22px; }
+  .modal-tabs { display: flex; gap: 0; border-bottom: 2px solid #E0E7EF; margin-bottom: 20px; }
+  .mtab { font-size: 12px; font-weight: 600; padding: 8px 16px; cursor: pointer; color: var(--mid); border-bottom: 2px solid transparent; margin-bottom: -2px; letter-spacing: .04em; }
+  .mtab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .form-section { display: none; }
+  .form-section.active { display: block; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 11px; font-weight: 700; color: var(--mid); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 5px; }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 9px 12px; border: 1.5px solid #D5DDE8;
+    border-radius: 5px; font-size: 13px; font-family: inherit;
+    color: var(--text); transition: border-color .2s;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    outline: none; border-color: var(--orange);
+  }
+  .form-row textarea { resize: vertical; min-height: 70px; }
+  .form-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-footer { padding: 14px 22px; border-top: 1px solid #E0E7EF; display: flex; justify-content: flex-end; gap: 10px; }
+  .btn-cancel { background: none; border: 1.5px solid #D5DDE8; color: var(--mid); padding: 8px 18px; border-radius: 5px; font-size: 13px; cursor: pointer; }
+  .btn-save { background: var(--orange); color: #fff; border: none; padding: 8px 22px; border-radius: 5px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-save:hover { background: #bf4700; }
+
+  /* Add row buttons */
+  .btn-add-row { background: var(--mist); border: 1.5px dashed #9BAEC8; color: var(--navy); padding: 7px 14px; border-radius: 5px; font-size: 12px; cursor: pointer; font-weight: 600; margin-top: 10px; width: 100%; }
+  .mini-table { font-size: 12px; width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .mini-table th { background: #F3F6FA; padding: 6px 8px; font-size: 10px; text-align: left; color: var(--mid); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .mini-table td { padding: 6px 8px; border-bottom: 1px solid #EDF1F7; }
+  .mini-table input, .mini-table select { width: 100%; padding: 4px 6px; border: 1px solid #D5DDE8; border-radius: 4px; font-size: 11px; }
+  .btn-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; }
+
+  /* FOOTER */
+  .dash-footer { background: var(--navy); color: rgba(255,255,255,.35); font-size: 10px; text-align: center; padding: 10px; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">PSC</div>
+    <div class="project-title">
+      <h1 id="topbarTitle">ROPA DOS</h1>
+      <p id="topbarCode">Y2023-06-R-01 &nbsp;·&nbsp; Weekly Construction Dashboard</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="week-badge" id="weekBadge">Week of Jun 8–13</div>
+    <button class="btn-admin" onclick="openAdmin()">⚙ Edit Data</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('overview')">Overview</div>
+  <div class="tab" onclick="showTab('scurve')">S-Curve</div>
+  <div class="tab" onclick="showTab('safety')">Safety</div>
+  <div class="tab" onclick="showTab('labor')">Labor</div>
+  <div class="tab" onclick="showTab('procurement')">Procurement</div>
+  <div class="tab" onclick="showTab('risks')">Risks</div>
+</div>
+
+<main>
+
+<!-- ===== OVERVIEW ===== -->
+<div class="panel active" id="panel-overview">
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="section-header">Schedule &amp; Cost</div>
+  <div class="two-col">
+    <div class="card">
+      <h3>Physical Progress</h3>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:42px;font-weight:800;color:var(--navy)" id="dispProgress">44.58%</div>
+        <div style="text-align:right">
+          <div class="badge badge-green" id="dispScheduleStatus">Ahead</div>
+          <div style="font-size:11px;color:var(--mid);margin-top:4px" id="dispSV">+24 days ahead</div>
+        </div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="progBarMain" style="width:44.58%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mid);margin-top:6px">
+        <span>0%</span><span>100%</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Budget Performance</h3>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">CPI</div>
+        <div style="font-size:36px;font-weight:800;color:var(--green)" id="dispCPI">2.62</div>
+        <div style="font-size:11px;color:var(--mid)">Cost Performance Index (>1 = under budget)</div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:10px">
+        <div style="flex:1;background:var(--mist);border-radius:6px;padding:10px">
+          <div style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Budget</div>
+          <div style="font-size:14px;font-weight:800;color:var(--navy);margin-top:3px" id="dispBudget">₱1.445B</div>
+        </div>
+        <div style="flex:1;background:var(--mist);border-radius:6px;padding:10px">
+          <div style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Actual Cost</div>
+          <div style="font-size:14px;font-weight:800;color:var(--navy);margin-top:3px" id="dispAC">₱551.4M</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">Period Accomplishment</div>
+  <div class="card" style="margin-bottom:24px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px">
+      <div class="detail-item">
+        <div class="label">PA Budget</div>
+        <div class="val" id="dispPABudget">₱30.0M</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">PA Actual</div>
+        <div class="val" id="dispPAActual">₱20.2M</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Planned Finish</div>
+        <div class="val" id="dispPlannedFinish">Dec 1, 2028</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Forecast Finish</div>
+        <div class="val" id="dispForecastFinish">Dec 1, 2028</div>
+      </div>
+      <div class="detail-item" style="grid-column: span 2">
+        <div class="label">Critical Activities</div>
+        <div class="val" id="dispCritical" style="font-size:13px;font-weight:600">Site Security Improvement</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">Recommendations</div>
+  <div class="card" style="margin-bottom:8px">
+    <div style="font-size:13px;color:var(--text);line-height:1.6" id="dispRecommendation">Maintain lead; monitor crew and material availability.</div>
+  </div>
+</div>
+
+<!-- ===== S-CURVE ===== -->
+<div class="panel" id="panel-scurve">
+  <div class="section-header">Physical Progress — S-Curve</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="chart-wrap"><canvas id="chartProgress"></canvas></div>
+  </div>
+  <div class="section-header">Cost Curve</div>
+  <div class="card">
+    <div class="chart-wrap"><canvas id="chartCost"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== SAFETY ===== -->
+<div class="panel" id="panel-safety">
+  <div class="kpi-row" id="safetyKPIs"></div>
+  <div class="section-header">Safety Detail</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="detail-grid" id="safetyDetail"></div>
+  </div>
+  <div class="section-header">NCR &amp; Inspections</div>
+  <div class="card">
+    <div class="chart-wrap" style="height:200px"><canvas id="chartInspections"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== LABOR ===== -->
+<div class="panel" id="panel-labor">
+  <div class="kpi-row" id="laborKPIs"></div>
+  <div class="section-header">Labor Metrics</div>
+  <div class="card">
+    <div class="chart-wrap" style="height:220px"><canvas id="chartLabor"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== PROCUREMENT ===== -->
+<div class="panel" id="panel-procurement">
+  <div class="section-header">Procurement Tracker</div>
+  <div class="card">
+    <table id="procTable">
+      <thead><tr><th>Item</th><th>Vendor</th><th>Required</th><th>Delivery</th><th>Status</th><th>Buffer</th><th>Remarks</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== RISKS ===== -->
+<div class="panel" id="panel-risks">
+  <div class="section-header">Risk Register</div>
+  <div class="card">
+    <table id="riskTable">
+      <thead><tr><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th><th>Due</th><th>Mitigation</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<div class="dash-footer">PSC Construction Dashboard · Primary Group of Builders · Powered by claude.ai</div>
+
+<!-- ===== ADMIN MODAL ===== -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>⚙ Edit Dashboard Data</h2>
+      <button onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <div class="mtab active" onclick="showMTab('mStatus')">Status</div>
+        <div class="mtab" onclick="showMTab('mProcurement')">Procurement</div>
+        <div class="mtab" onclick="showMTab('mRisks')">Risks</div>
+        <div class="mtab" onclick="showMTab('mMeta')">Project Info</div>
+      </div>
+
+      <!-- STATUS FORM -->
+      <div class="form-section active" id="mStatus">
+        <div class="form-two">
+          <div class="form-row"><label>Week Of</label><input id="f_weekOf" type="text"></div>
+          <div class="form-row"><label>Prepared By</label><input id="f_preparedBy" type="text"></div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Physical Progress (%)</label><input id="f_progress" type="number" step="0.01"></div>
+          <div class="form-row"><label>Schedule Status</label>
+            <select id="f_schedStatus"><option>Ahead</option><option>On Track</option><option>Delayed</option></select>
+          </div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Schedule Variance (days)</label><input id="f_sv" type="number"></div>
+          <div class="form-row"><label>Cost Status</label>
+            <select id="f_costStatus"><option>Within Budget</option><option>Over Budget</option></select>
+          </div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Health</label>
+            <select id="f_health"><option>Good</option><option>Fair</option><option>At Risk</option></select>
+          </div>
+          <div class="form-row"><label>CPI</label><input id="f_cpi" type="number" step="0.0001"></div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Budget (₱)</label><input id="f_budget" type="number"></div>
+          <div class="form-row"><label>Actual Cost (₱)</label><input id="f_ac" type="number"></div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Planned Finish</label><input id="f_plannedFinish" type="text"></div>
+          <div class="form-row"><label>Forecast Finish</label><input id="f_forecastFinish" type="text"></div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>PA Budget (₱)</label><input id="f_paBudget" type="number"></div>
+          <div class="form-row"><label>PA Actual (₱)</label><input id="f_paActual" type="number"></div>
+        </div>
+        <div class="form-row"><label>Critical Activities</label><textarea id="f_critical"></textarea></div>
+        <div class="form-row"><label>Schedule Recommendation</label><textarea id="f_recommendation"></textarea></div>
+        <div class="section-header" style="margin-top:18px">Safety</div>
+        <div class="form-two">
+          <div class="form-row"><label>Safe Man-Hours</label><input id="f_manHours" type="number" step="0.1"></div>
+          <div class="form-row"><label>Inspections Due</label><input id="f_insDue" type="number"></div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Inspections Done</label><input id="f_insDone" type="number"></div>
+          <div class="form-row"><label>NCR Open</label><input id="f_ncr" type="number"></div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Incidents</label><input id="f_incidents" type="number"></div>
+          <div class="form-row"><label>Near Miss</label><input id="f_nearMiss" type="number"></div>
+        </div>
+        <div class="form-two">
+          <div class="form-row"><label>Last Toolbox Meeting</label><input id="f_toolbox" type="text"></div>
+          <div class="form-row"><label>DDI (%)</label><input id="f_ddi" type="number" step="0.01"></div>
+        </div>
+        <div class="form-row"><label>Safety Action</label><textarea id="f_safetyAction"></textarea></div>
+        <div class="section-header" style="margin-top:18px">Labor</div>
+        <div class="form-two">
+          <div class="form-row"><label>OT Rate (%)</label><input id="f_otRate" type="number" step="0.01"></div>
+          <div class="form-row"><label>OT Baseline (%)</label><input id="f_otBaseline" type="number" step="0.01"></div>
+        </div>
+        <div class="form-row"><label>OLC/ALC</label><input id="f_olcalc" type="number" step="0.001"></div>
+      </div>
+
+      <!-- PROCUREMENT FORM -->
+      <div class="form-section" id="mProcurement">
+        <table class="mini-table" id="procEdit">
+          <thead><tr><th>Item</th><th>Vendor</th><th>Req'd Date</th><th>Delivery</th><th>Status</th><th>Buffer</th><th>Remarks</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <button class="btn-add-row" onclick="addProcRow()">+ Add Row</button>
+      </div>
+
+      <!-- RISKS FORM -->
+      <div class="form-section" id="mRisks">
+        <table class="mini-table" id="riskEdit">
+          <thead><tr><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th><th>Due</th><th>Mitigation</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <button class="btn-add-row" onclick="addRiskRow()">+ Add Row</button>
+      </div>
+
+      <!-- META FORM -->
+      <div class="form-section" id="mMeta">
+        <div class="form-two">
+          <div class="form-row"><label>Project Name</label><input id="f_projectName" type="text"></div>
+          <div class="form-row"><label>Project Code</label><input id="f_projectCode" type="text"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAdmin()">Cancel</button>
+      <button class="btn-save" onclick="saveAdmin()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====================== DATA STORE ======================
+let D = {
+  meta: {
+    projectName: "ROPA DOS",
+    projectCode: "Y2023-06-R-01"
+  },
+  status: {
+    weekOf: "June 8–13",
+    preparedBy: "Ariel M. Canino",
+    progress: 44.58,
+    schedStatus: "Ahead",
+    sv: 24,
+    costStatus: "Within Budget",
+    health: "Good",
+    cpi: 2.6207,
+    budget: 1445000000,
+    ac: 551383826.11,
+    fac: 1445000000,
+    plannedFinish: "Dec 1, 2028",
+    forecastFinish: "Dec 1, 2028",
+    critical: "Site Security Improvement",
+    recommendation: "Maintain lead; monitor crew and material availability.",
+    paBudget: 30000000,
+    paActual: 20220014,
+    // Safety
+    manHours: 1192973.7,
+    insDue: 6,
+    insDone: 2,
+    ncr: 0,
+    incidents: 0,
+    nearMiss: 0,
+    toolbox: "June 13, 2026",
+    safetyAction: "Immediate start of Construction of Guardhouse",
+    ddi: 29,
+    // Labor
+    otRate: 16.86,
+    otBaseline: 20,
+    olcalc: 0.77
+  },
+  scurve: [
+    {period:"May 2024",   planned:0.41,  actual:0.64,  plannedCost:596632000,    actualCost:931328000},
+    {period:"Jun 2024",   planned:0.97,  actual:1.24,  plannedCost:1411544000,   actualCost:1804448000},
+    {period:"Jul 2024",   planned:2.25,  actual:2.29,  plannedCost:3274200000,   actualCost:3332408000},
+    {period:"Aug 2024",   planned:3.28,  actual:3.34,  plannedCost:4773056000,   actualCost:4860368000},
+    {period:"Sep 2024",   planned:4.24,  actual:4.40,  plannedCost:6170048000,   actualCost:6402880000},
+    {period:"Oct 2024",   planned:5.64,  actual:5.92,  plannedCost:8207328000,   actualCost:8614784000},
+    {period:"Nov 2024",   planned:6.72,  actual:7.46,  plannedCost:9778944000,   actualCost:10855792000},
+    {period:"Dec 2024",   planned:7.95,  actual:8.96,  plannedCost:11568840000,  actualCost:13038592000},
+    {period:"Jan 2025",   planned:10.82, actual:10.72, plannedCost:15745264000,  actualCost:15599744000},
+    {period:"Feb 2025",   planned:12.60, actual:13.27, plannedCost:18335520000,  actualCost:19310504000},
+    {period:"Mar 2025",   planned:14.20, actual:15.22, plannedCost:20663840000,  actualCost:22148144000},
+    {period:"Apr 2025",   planned:16.75, actual:17.26, plannedCost:24374600000,  actualCost:25116752000},
+    {period:"May 2025",   planned:19.26, actual:19.32, plannedCost:28027152000,  actualCost:28114464000},
+    {period:"Jun 2025",   planned:20.56, actual:21.41, plannedCost:29918912000,  actualCost:31155832000},
+    {period:"Jul 2025",   planned:22.60, actual:23.51, plannedCost:32887520000,  actualCost:34211752000},
+    {period:"Aug 2025",   planned:24.69, actual:25.65, plannedCost:35928888000,  actualCost:37325880000},
+    {period:"Sep 2025",   planned:26.78, actual:27.83, plannedCost:38970256000,  actualCost:40498216000},
+    {period:"Oct 2025",   planned:28.84, actual:30.06, plannedCost:41967968000,  actualCost:43743312000},
+    {period:"Nov 2025",   planned:30.93, actual:32.28, plannedCost:45009336000,  actualCost:46973856000},
+    {period:"Dec 2025",   planned:32.96, actual:34.33, plannedCost:47963392000,  actualCost:49957016000},
+    {period:"Jan 2026",   planned:35.00, actual:36.42, plannedCost:50932000000,  actualCost:52998384000},
+    {period:"Feb 2026",   planned:37.03, actual:38.54, plannedCost:53886056000,  actualCost:56083408000},
+    {period:"Mar 2026",   planned:39.12, actual:40.62, plannedCost:56927424000,  actualCost:59110224000},
+    {period:"Apr 2026",   planned:41.12, actual:42.57, plannedCost:59837824000,  actualCost:61947864000},
+    {period:"May 2026",   planned:43.18, actual:44.58, plannedCost:62835536000,  actualCost:64872816000},
+    {period:"Jun 2026",   planned:45.24, actual:null,  plannedCost:65833248000,  actualCost:null},
+    {period:"Jul 2026",   planned:47.33, actual:null,  plannedCost:68874616000,  actualCost:null},
+    {period:"Aug 2026",   planned:49.37, actual:null,  plannedCost:71843224000,  actualCost:null},
+    {period:"Sep 2026",   planned:51.47, actual:null,  plannedCost:74899144000,  actualCost:null},
+    {period:"Oct 2026",   planned:53.55, actual:null,  plannedCost:77925960000,  actualCost:null},
+    {period:"Nov 2026",   planned:55.65, actual:null,  plannedCost:80981880000,  actualCost:null},
+    {period:"Dec 2026",   planned:57.72, actual:null,  plannedCost:83994144000,  actualCost:null},
+    {period:"Jan 2027",   planned:59.83, actual:null,  plannedCost:87064616000,  actualCost:null},
+    {period:"Feb 2027",   planned:61.86, actual:null,  plannedCost:90018672000,  actualCost:null},
+    {period:"Mar 2027",   planned:63.89, actual:null,  plannedCost:92972728000,  actualCost:null},
+    {period:"Apr 2027",   planned:65.89, actual:null,  plannedCost:95883128000,  actualCost:null},
+  ],
+  procurement: [
+    {item:"Elevator", vendor:"Hyundai", required:"May 10, 2026", delivery:"Apr 26, 2026", status:"Delivered", buffer:"Early +14d", remarks:"No action needed — delivered early"}
+  ],
+  risks: [
+    {desc:"Price Escalation", impact:"Medium", status:"Ongoing", owner:"Project Manager", due:"Jun 2026", mitigation:"Formalize escalation contingency plan: bulk-buy contracts, price lock agreements, escalation clauses."}
+  ]
+};
+
+// ====================== HELPERS ======================
+function peso(v) {
+  if (!v && v !== 0) return '—';
+  if (Math.abs(v) >= 1e9) return '₱' + (v/1e9).toFixed(2) + 'B';
+  if (Math.abs(v) >= 1e6) return '₱' + (v/1e6).toFixed(1) + 'M';
+  return '₱' + v.toLocaleString();
+}
+function badgeClass(val, type) {
+  if (type === 'schedule') return val === 'Ahead' ? 'badge-green' : val === 'On Track' ? 'badge-navy' : 'badge-red';
+  if (type === 'health')   return val === 'Good'  ? 'badge-green' : val === 'Fair'     ? 'badge-amber': 'badge-red';
+  if (type === 'cost')     return val === 'Within Budget' ? 'badge-green' : 'badge-red';
+  return 'badge-navy';
+}
+
+// ====================== RENDER ======================
+function renderAll() {
+  renderOverview();
+  renderSCurve();
+  renderSafety();
+  renderLabor();
+  renderProcurement();
+  renderRisks();
+}
+
+function renderOverview() {
+  const s = D.status;
+  // topbar
+  document.getElementById('topbarTitle').textContent = D.meta.projectName;
+  document.getElementById('topbarCode').textContent = D.meta.projectCode + ' · Weekly Construction Dashboard';
+  document.getElementById('weekBadge').textContent = 'Week of ' + s.weekOf;
+  // KPIs
+  const kpis = [
+    {label:'Physical Progress', value: s.progress.toFixed(2)+'%', sub:'vs '+D.scurve.filter(r=>r.actual!==null).slice(-2,-1)[0]?.planned?.toFixed(2)+'% planned', color:'orange'},
+    {label:'Schedule Status',   value: `<span class="badge ${badgeClass(s.schedStatus,'schedule')}">${s.schedStatus}</span>`, sub:`Variance: ${s.sv>0?'+':''}${s.sv}d`, color:''},
+    {label:'Health',            value: `<span class="badge ${badgeClass(s.health,'health')}">${s.health}</span>`, sub:'Overall project health', color:''},
+    {label:'CPI',               value: s.cpi.toFixed(2), sub:'Cost Performance Index', color: s.cpi >= 1 ? 'green' : 'red'},
+  ];
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
+    <div class="kpi ${k.color}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+  // progress card
+  document.getElementById('dispProgress').textContent = s.progress.toFixed(2) + '%';
+  document.getElementById('dispScheduleStatus').className = 'badge ' + badgeClass(s.schedStatus,'schedule');
+  document.getElementById('dispScheduleStatus').textContent = s.schedStatus;
+  document.getElementById('dispSV').textContent = (s.sv>0?'+':'')+s.sv+' days';
+  document.getElementById('progBarMain').style.width = s.progress + '%';
+  // budget
+  document.getElementById('dispCPI').textContent = s.cpi.toFixed(2);
+  document.getElementById('dispCPI').style.color = s.cpi >= 1 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('dispBudget').textContent = peso(s.budget);
+  document.getElementById('dispAC').textContent = peso(s.ac);
+  // PA
+  document.getElementById('dispPABudget').textContent = peso(s.paBudget);
+  document.getElementById('dispPAActual').textContent = peso(s.paActual);
+  document.getElementById('dispPlannedFinish').textContent = s.plannedFinish;
+  document.getElementById('dispForecastFinish').textContent = s.forecastFinish;
+  document.getElementById('dispCritical').textContent = s.critical;
+  document.getElementById('dispRecommendation').textContent = s.recommendation;
+}
+
+let chartP, chartC, chartI, chartL;
+function renderSCurve() {
+  const labels = D.scurve.map(r=>r.period);
+  const planned = D.scurve.map(r=>r.planned);
+  const actual  = D.scurve.map(r=>r.actual);
+  const plannedCost = D.scurve.map(r=>r.plannedCost ? r.plannedCost/1e9 : null);
+  const actualCost  = D.scurve.map(r=>r.actualCost  ? r.actualCost/1e9  : null);
+
+  if (chartP) chartP.destroy();
+  chartP = new Chart(document.getElementById('chartProgress'), {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Planned (%)', data:planned, borderColor:'#2A3F6B', backgroundColor:'rgba(42,63,107,.08)', tension:.4, pointRadius:2, fill:true},
+        {label:'Actual (%)',  data:actual,  borderColor:'#E65100', backgroundColor:'rgba(230,81,0,.08)',  tension:.4, pointRadius:3, fill:true, spanGaps:false}
+      ]
+    },
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{maxRotation:45,font:{size:10}}}, y:{title:{display:true,text:'Progress (%)'},ticks:{callback:v=>v+'%'}}},
+      plugins:{legend:{position:'top',labels:{font:{size:11}}}}
+    }
+  });
+
+  if (chartC) chartC.destroy();
+  chartC = new Chart(document.getElementById('chartCost'), {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Planned Cost (₱B)', data:plannedCost, borderColor:'#2A3F6B', backgroundColor:'rgba(42,63,107,.08)', tension:.4, pointRadius:2, fill:true},
+        {label:'Actual Cost (₱B)',  data:actualCost,  borderColor:'#E65100', backgroundColor:'rgba(230,81,0,.08)',  tension:.4, pointRadius:3, fill:true, spanGaps:false}
+      ]
+    },
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{maxRotation:45,font:{size:10}}}, y:{title:{display:true,text:'₱ Billion'}, ticks:{callback:v=>'₱'+v.toFixed(0)+'B'}}},
+      plugins:{legend:{position:'top',labels:{font:{size:11}}}}
+    }
+  });
+}
+
+function renderSafety() {
+  const s = D.status;
+  const insRate = s.insDue > 0 ? Math.round(s.insDone/s.insDue*100) : 0;
+  document.getElementById('safetyKPIs').innerHTML = [
+    {label:'Safe Man-Hours', value: (s.manHours/1e6).toFixed(3)+'M', sub:'Cumulative', color:'green'},
+    {label:'Inspections', value: s.insDone+'/'+s.insDue, sub:insRate+'% completion rate', color: insRate>=80?'green':'amber'},
+    {label:'NCR Open', value: s.ncr, sub:'Non-Conformance Reports', color: s.ncr===0?'green':'red'},
+    {label:'Incidents', value: s.incidents, sub: s.incidents===0?'Zero incidents ✓':'Review required', color: s.incidents===0?'green':'red'},
+    {label:'Near Miss', value: s.nearMiss, sub:'Reported near misses', color: s.nearMiss===0?'green':'amber'},
+    {label:'DDI', value: s.ddi+'%', sub:'Defect Density Index', color: s.ddi<=30?'green':'amber'},
+  ].map(k=>`<div class="kpi ${k.color}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  document.getElementById('safetyDetail').innerHTML = `
+    <div class="detail-item"><div class="label">Last Toolbox</div><div class="val">${s.toolbox}</div></div>
+    <div class="detail-item"><div class="label">Safety Action</div><div class="val" style="font-size:12px;font-weight:600">${s.safetyAction}</div></div>
+  `;
+
+  if (chartI) chartI.destroy();
+  chartI = new Chart(document.getElementById('chartInspections'), {
+    type:'bar',
+    data:{
+      labels:['Inspections Due','Inspections Done','NCR Open','Incidents','Near Miss'],
+      datasets:[{
+        data:[s.insDue, s.insDone, s.ncr, s.incidents, s.nearMiss],
+        backgroundColor:['#2A3F6B','#1A7A4A','#C0392B','#C0392B','#D4830A'],
+        borderRadius:5
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+}
+
+function renderLabor() {
+  const s = D.status;
+  document.getElementById('laborKPIs').innerHTML = [
+    {label:'OT Rate', value: s.otRate+'%', sub:'vs '+s.otBaseline+'% baseline', color: s.otRate <= s.otBaseline ? 'green' : 'amber'},
+    {label:'OLC/ALC', value: s.olcalc.toFixed(3), sub:'Output/Allowed Labor Cost', color: s.olcalc <= 1 ? 'green' : 'red'},
+    {label:'DDI', value: s.ddi+'%', sub:'Defect Density Index', color: s.ddi<=30?'green':'amber'},
+  ].map(k=>`<div class="kpi ${k.color}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  if (chartL) chartL.destroy();
+  chartL = new Chart(document.getElementById('chartLabor'), {
+    type:'bar',
+    data:{
+      labels:['OT Rate (%)','OT Baseline (%)','OLC/ALC (×10)'],
+      datasets:[{
+        data:[s.otRate, s.otBaseline, s.olcalc*10],
+        backgroundColor:['#E65100','#2A3F6B','#1A7A4A'],
+        borderRadius:6
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true}}}
+  });
+}
+
+function renderProcurement() {
+  const tbody = document.querySelector('#procTable tbody');
+  tbody.innerHTML = D.procurement.map(r=>`<tr>
+    <td><strong>${r.item||'—'}</strong></td>
+    <td>${r.vendor||'—'}</td>
+    <td>${r.required||'—'}</td>
+    <td>${r.delivery||'—'}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td>${r.buffer||'—'}</td>
+    <td>${r.remarks||'—'}</td>
+  </tr>`).join('');
+}
+
+function statusBadge(s) {
+  const m = {Delivered:'badge-green','In Progress':'badge-amber',Delayed:'badge-red',Pending:'badge-navy'};
+  return `<span class="badge ${m[s]||'badge-navy'}">${s||'—'}</span>`;
+}
+
+function renderRisks() {
+  const tbody = document.querySelector('#riskTable tbody');
+  tbody.innerHTML = D.risks.map(r=>`<tr>
+    <td><strong>${r.desc||'—'}</strong></td>
+    <td>${impactBadge(r.impact)}</td>
+    <td><span class="badge badge-amber">${r.status||'—'}</span></td>
+    <td>${r.owner||'—'}</td>
+    <td>${r.due||'—'}</td>
+    <td>${r.mitigation||'—'}</td>
+  </tr>`).join('');
+}
+
+function impactBadge(v) {
+  const m = {High:'badge-red',Medium:'badge-amber',Low:'badge-green'};
+  return `<span class="badge ${m[v]||'badge-navy'}">${v||'—'}</span>`;
+}
+
+// ====================== TABS ======================
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id==='scurve') setTimeout(renderSCurve,50);
+  if (id==='safety') setTimeout(renderSafety,50);
+  if (id==='labor')  setTimeout(renderLabor,50);
+}
+
+// ====================== ADMIN MODAL ======================
+function openAdmin() {
+  const s = D.status;
+  // populate status fields
+  document.getElementById('f_weekOf').value        = s.weekOf;
+  document.getElementById('f_preparedBy').value    = s.preparedBy;
+  document.getElementById('f_progress').value      = s.progress;
+  document.getElementById('f_schedStatus').value   = s.schedStatus;
+  document.getElementById('f_sv').value            = s.sv;
+  document.getElementById('f_costStatus').value    = s.costStatus;
+  document.getElementById('f_health').value        = s.health;
+  document.getElementById('f_cpi').value           = s.cpi;
+  document.getElementById('f_budget').value        = s.budget;
+  document.getElementById('f_ac').value            = s.ac;
+  document.getElementById('f_plannedFinish').value = s.plannedFinish;
+  document.getElementById('f_forecastFinish').value= s.forecastFinish;
+  document.getElementById('f_critical').value      = s.critical;
+  document.getElementById('f_recommendation').value= s.recommendation;
+  document.getElementById('f_paBudget').value      = s.paBudget;
+  document.getElementById('f_paActual').value      = s.paActual;
+  document.getElementById('f_manHours').value      = s.manHours;
+  document.getElementById('f_insDue').value        = s.insDue;
+  document.getElementById('f_insDone').value       = s.insDone;
+  document.getElementById('f_ncr').value           = s.ncr;
+  document.getElementById('f_incidents').value     = s.incidents;
+  document.getElementById('f_nearMiss').value      = s.nearMiss;
+  document.getElementById('f_toolbox').value       = s.toolbox;
+  document.getElementById('f_safetyAction').value  = s.safetyAction;
+  document.getElementById('f_ddi').value           = s.ddi;
+  document.getElementById('f_otRate').value        = s.otRate;
+  document.getElementById('f_otBaseline').value    = s.otBaseline;
+  document.getElementById('f_olcalc').value        = s.olcalc;
+  document.getElementById('f_projectName').value   = D.meta.projectName;
+  document.getElementById('f_projectCode').value   = D.meta.projectCode;
+  // procurement edit table
+  renderProcEdit();
+  renderRiskEdit();
+  document.getElementById('adminModal').classList.add('open');
+}
+
+function closeAdmin() { document.getElementById('adminModal').classList.remove('open'); }
+
+function showMTab(id) {
+  document.querySelectorAll('.form-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function saveAdmin() {
+  const s = D.status;
+  s.weekOf        = document.getElementById('f_weekOf').value;
+  s.preparedBy    = document.getElementById('f_preparedBy').value;
+  s.progress      = parseFloat(document.getElementById('f_progress').value)||0;
+  s.schedStatus   = document.getElementById('f_schedStatus').value;
+  s.sv            = parseFloat(document.getElementById('f_sv').value)||0;
+  s.costStatus    = document.getElementById('f_costStatus').value;
+  s.health        = document.getElementById('f_health').value;
+  s.cpi           = parseFloat(document.getElementById('f_cpi').value)||0;
+  s.budget        = parseFloat(document.getElementById('f_budget').value)||0;
+  s.ac            = parseFloat(document.getElementById('f_ac').value)||0;
+  s.plannedFinish = document.getElementById('f_plannedFinish').value;
+  s.forecastFinish= document.getElementById('f_forecastFinish').value;
+  s.critical      = document.getElementById('f_critical').value;
+  s.recommendation= document.getElementById('f_recommendation').value;
+  s.paBudget      = parseFloat(document.getElementById('f_paBudget').value)||0;
+  s.paActual      = parseFloat(document.getElementById('f_paActual').value)||0;
+  s.manHours      = parseFloat(document.getElementById('f_manHours').value)||0;
+  s.insDue        = parseInt(document.getElementById('f_insDue').value)||0;
+  s.insDone       = parseInt(document.getElementById('f_insDone').value)||0;
+  s.ncr           = parseInt(document.getElementById('f_ncr').value)||0;
+  s.incidents     = parseInt(document.getElementById('f_incidents').value)||0;
+  s.nearMiss      = parseInt(document.getElementById('f_nearMiss').value)||0;
+  s.toolbox       = document.getElementById('f_toolbox').value;
+  s.safetyAction  = document.getElementById('f_safetyAction').value;
+  s.ddi           = parseFloat(document.getElementById('f_ddi').value)||0;
+  s.otRate        = parseFloat(document.getElementById('f_otRate').value)||0;
+  s.otBaseline    = parseFloat(document.getElementById('f_otBaseline').value)||0;
+  s.olcalc        = parseFloat(document.getElementById('f_olcalc').value)||0;
+  D.meta.projectName = document.getElementById('f_projectName').value;
+  D.meta.projectCode = document.getElementById('f_projectCode').value;
+  // procurement
+  D.procurement = [];
+  document.querySelectorAll('#procEdit tbody tr').forEach(tr=>{
+    const cells = tr.querySelectorAll('input, select');
+    D.procurement.push({
+      item:cells[0].value, vendor:cells[1].value, required:cells[2].value,
+      delivery:cells[3].value, status:cells[4].value, buffer:cells[5].value, remarks:cells[6].value
+    });
+  });
+  // risks
+  D.risks = [];
+  document.querySelectorAll('#riskEdit tbody tr').forEach(tr=>{
+    const cells = tr.querySelectorAll('input, select, textarea');
+    D.risks.push({
+      desc:cells[0].value, impact:cells[1].value, status:cells[2].value,
+      owner:cells[3].value, due:cells[4].value, mitigation:cells[5].value
+    });
+  });
+  closeAdmin();
+  renderAll();
+}
+
+// Procurement edit
+function renderProcEdit() {
+  const tbody = document.querySelector('#procEdit tbody');
+  tbody.innerHTML = D.procurement.map((r,i)=>`<tr>
+    <td><input value="${r.item||''}"></td>
+    <td><input value="${r.vendor||''}"></td>
+    <td><input value="${r.required||''}"></td>
+    <td><input value="${r.delivery||''}"></td>
+    <td><select>${['Delivered','In Progress','Delayed','Pending'].map(o=>`<option${o===r.status?' selected':''}>${o}</option>`).join('')}</select></td>
+    <td><input value="${r.buffer||''}"></td>
+    <td><input value="${r.remarks||''}"></td>
+    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`).join('');
+}
+function addProcRow() {
+  const tbody = document.querySelector('#procEdit tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input></td><td><input></td><td><input></td><td><input></td>
+    <td><select><option>In Progress</option><option>Delivered</option><option>Delayed</option><option>Pending</option></select></td>
+    <td><input></td><td><input></td>
+    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+// Risk edit
+function renderRiskEdit() {
+  const tbody = document.querySelector('#riskEdit tbody');
+  tbody.innerHTML = D.risks.map((r,i)=>`<tr>
+    <td><input value="${r.desc||''}"></td>
+    <td><select>${['High','Medium','Low'].map(o=>`<option${o===r.impact?' selected':''}>${o}</option>`).join('')}</select></td>
+    <td><select>${['Ongoing','Active','Closed','Monitoring'].map(o=>`<option${o===r.status?' selected':''}>${o}</option>`).join('')}</select></td>
+    <td><input value="${r.owner||''}"></td>
+    <td><input value="${r.due||''}"></td>
+    <td><input value="${r.mitigation||''}"></td>
+    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`).join('');
+}
+function addRiskRow() {
+  const tbody = document.querySelector('#riskEdit tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input></td>
+    <td><select><option>High</option><option>Medium</option><option>Low</option></select></td>
+    <td><select><option>Ongoing</option><option>Active</option><option>Closed</option><option>Monitoring</option></select></td>
+    <td><input></td><td><input></td><td><input></td>
+    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+// ====================== INIT ======================
+renderAll();
+</script>
+</body>
+</html>
