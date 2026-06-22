@@ -3,948 +3,851 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PSC Construction Dashboard — ROPA DOS</title>
+<title>PSC Construction Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root {
-    --navy:   #0D1B3D;
-    --cream:  #FEF9F3;
-    --orange: #E65100;
-    --gold:   #F5A623;
-    --steel:  #2A3F6B;
-    --mist:   #EAF0FB;
-    --green:  #1A7A4A;
-    --red:    #C0392B;
-    --amber:  #D4830A;
-    --text:   #1A1A2E;
-    --mid:    #6B7A99;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--navy); color: var(--text); min-height: 100vh; }
+/* ── CONFIG ── fill your Supabase creds in the <script> block below */
+:root {
+  --navy:#0D1B3D; --steel:#1E3A6E; --orange:#E65100; --gold:#F5A623;
+  --cream:#FEF9F3; --mist:#EAF0FB; --green:#1A7A4A; --red:#C0392B;
+  --amber:#D4830A; --mid:#6B7A99; --border:#DDE4F0; --white:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--navy);color:#1A1A2E;min-height:100vh;}
 
-  /* TOPBAR */
-  .topbar {
-    background: var(--navy);
-    padding: 14px 24px;
-    display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 3px solid var(--orange);
-    position: sticky; top: 0; z-index: 100;
-  }
-  .topbar-left { display: flex; align-items: center; gap: 14px; }
-  .logo-mark {
-    background: var(--orange);
-    color: #fff;
-    font-weight: 800;
-    font-size: 13px;
-    letter-spacing: .08em;
-    padding: 6px 10px;
-    border-radius: 4px;
-  }
-  .project-title { color: #fff; }
-  .project-title h1 { font-size: 15px; font-weight: 700; letter-spacing: .06em; }
-  .project-title p { font-size: 11px; color: var(--gold); letter-spacing: .04em; }
-  .topbar-right { display: flex; align-items: center; gap: 10px; }
-  .week-badge {
-    background: rgba(255,255,255,.08);
-    color: var(--cream);
-    font-size: 11px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,.15);
-  }
-  .btn-admin {
-    background: var(--orange);
-    color: #fff;
-    border: none;
-    padding: 7px 16px;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: .04em;
-  }
-  .btn-admin:hover { background: #bf4700; }
+/* TOPBAR */
+.topbar{background:var(--navy);padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--orange);position:sticky;top:0;z-index:200;height:52px;}
+.tl{display:flex;align-items:center;gap:12px;}
+.logo{background:var(--orange);color:#fff;font-weight:800;font-size:12px;letter-spacing:.1em;padding:5px 9px;border-radius:4px;}
+.tl h1{color:#fff;font-size:14px;font-weight:700;letter-spacing:.05em;}
+.tl p{color:var(--gold);font-size:10px;letter-spacing:.04em;}
+.tr{display:flex;align-items:center;gap:8px;}
+.meta-pill{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);font-size:10px;padding:4px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);}
+.btn-admin{background:var(--orange);color:#fff;border:none;padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;letter-spacing:.04em;}
 
-  /* TABS */
-  .tabs {
-    background: var(--steel);
-    display: flex; gap: 0;
-    padding: 0 24px;
-  }
-  .tab {
-    color: rgba(255,255,255,.55);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: .06em;
-    padding: 11px 20px;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: all .2s;
-    text-transform: uppercase;
-  }
-  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-  .tab:hover:not(.active) { color: #fff; }
+/* SIDENAV */
+.layout{display:flex;min-height:calc(100vh - 52px);}
+.sidenav{width:200px;background:#0A1630;flex-shrink:0;padding:16px 0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:9px 16px;color:rgba(255,255,255,.55);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border-left:3px solid transparent;}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.05);}
+.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(245,166,35,.07);}
+.nav-item .icon{font-size:14px;width:18px;text-align:center;}
 
-  /* MAIN */
-  main { background: var(--cream); min-height: calc(100vh - 120px); padding: 24px; }
-  .panel { display: none; }
-  .panel.active { display: block; }
+/* MAIN */
+main{flex:1;background:var(--cream);overflow-x:hidden;}
+.panel{display:none;padding:20px;}
+.panel.active{display:block;}
 
-  /* KPI ROW */
-  .kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
-  .kpi {
-    background: #fff;
-    border-radius: 8px;
-    padding: 16px 18px;
-    border-left: 4px solid var(--navy);
-    box-shadow: 0 1px 4px rgba(0,0,0,.08);
-  }
-  .kpi.orange { border-left-color: var(--orange); }
-  .kpi.green  { border-left-color: var(--green); }
-  .kpi.amber  { border-left-color: var(--amber); }
-  .kpi.red    { border-left-color: var(--red); }
-  .kpi-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--mid); text-transform: uppercase; margin-bottom: 6px; }
-  .kpi-value { font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1; }
-  .kpi-sub   { font-size: 11px; color: var(--mid); margin-top: 4px; }
+/* LOADING */
+.loading{text-align:center;padding:60px 20px;color:var(--mid);font-size:13px;}
 
-  /* STATUS BADGES */
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .04em;
-  }
-  .badge-green  { background: #D4F0E3; color: var(--green); }
-  .badge-amber  { background: #FDF0D5; color: var(--amber); }
-  .badge-red    { background: #FAE0DE; color: var(--red); }
-  .badge-navy   { background: var(--mist); color: var(--navy); }
+/* SECTION HEADER */
+.sh{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin:20px 0 10px;display:flex;align-items:center;gap:8px;}
+.sh::after{content:'';flex:1;height:1px;background:var(--border);}
 
-  /* SECTION HEADERS */
-  .section-header {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--mid);
-    margin: 24px 0 12px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .section-header::after { content: ''; flex: 1; height: 1px; background: #E0E7EF; }
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.kpi{background:var(--white);border-radius:7px;padding:14px 16px;border-left:4px solid var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.kpi.g{border-left-color:var(--green)}.kpi.o{border-left-color:var(--orange)}.kpi.r{border-left-color:var(--red)}.kpi.a{border-left-color:var(--amber)}
+.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:.09em;color:var(--mid);text-transform:uppercase;margin-bottom:5px;}
+.kpi-val{font-size:24px;font-weight:800;color:var(--navy);line-height:1;}
+.kpi-sub{font-size:10px;color:var(--mid);margin-top:3px;}
 
-  /* TWO-COL */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-  @media(max-width:700px) { .two-col { grid-template-columns: 1fr; } }
+/* CARD */
+.card{background:var(--white);border-radius:7px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:16px;}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);margin-bottom:12px;}
 
-  /* CARDS */
-  .card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 18px 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.08);
-  }
-  .card h3 { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--mid); text-transform: uppercase; margin-bottom: 14px; }
+/* TWO COL */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:700px){.two,.three{grid-template-columns:1fr;}}
 
-  /* CHART CONTAINER */
-  .chart-wrap { position: relative; height: 280px; }
+/* CHART */
+.ch{position:relative;height:260px;}
+.ch.sm{height:200px;}
+.ch.lg{height:320px;}
 
-  /* TABLE */
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: var(--mist); color: var(--navy); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 9px 12px; text-align: left; }
-  td { padding: 9px 12px; border-bottom: 1px solid #EDF1F7; color: var(--text); vertical-align: top; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #F7F9FC; }
+/* BADGE */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+.bg{background:#D4F0E3;color:var(--green)}.br{background:#FAE0DE;color:var(--red)}.ba{background:#FDF0D5;color:var(--amber)}.bn{background:var(--mist);color:var(--navy)}
 
-  /* PROGRESS BAR */
-  .prog-bar { background: #E0E7EF; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 6px; }
-  .prog-fill { height: 100%; border-radius: 4px; background: var(--orange); transition: width .4s; }
-  .prog-fill.green { background: var(--green); }
-  .prog-fill.amber { background: var(--amber); }
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{background:var(--mist);color:var(--navy);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;text-align:left;}
+.tbl td{padding:8px 10px;border-bottom:1px solid #EDF1F7;vertical-align:top;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:#F7F9FC;}
 
-  /* DETAIL ROW */
-  .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .detail-item { padding: 12px 14px; background: var(--mist); border-radius: 6px; }
-  .detail-item .label { font-size: 10px; font-weight: 700; color: var(--mid); text-transform: uppercase; letter-spacing: .07em; }
-  .detail-item .val   { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 3px; }
+/* PROGRESS */
+.pbar{background:#E0E7EF;border-radius:4px;height:7px;overflow:hidden;}
+.pfill{height:100%;border-radius:4px;background:var(--orange);}
+.pfill.g{background:var(--green)}.pfill.a{background:var(--amber)}
 
-  /* ADMIN MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.6); z-index: 999;
-    align-items: flex-start; justify-content: center;
-    padding: 40px 16px; overflow-y: auto;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: #fff;
-    border-radius: 10px;
-    width: 100%; max-width: 660px;
-    box-shadow: 0 8px 40px rgba(0,0,0,.25);
-  }
-  .modal-head {
-    background: var(--navy);
-    color: #fff;
-    padding: 16px 22px;
-    border-radius: 10px 10px 0 0;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .modal-head h2 { font-size: 14px; font-weight: 700; letter-spacing: .05em; }
-  .modal-head button { background: none; border: none; color: rgba(255,255,255,.7); font-size: 20px; cursor: pointer; }
-  .modal-body { padding: 22px; }
-  .modal-tabs { display: flex; gap: 0; border-bottom: 2px solid #E0E7EF; margin-bottom: 20px; }
-  .mtab { font-size: 12px; font-weight: 600; padding: 8px 16px; cursor: pointer; color: var(--mid); border-bottom: 2px solid transparent; margin-bottom: -2px; letter-spacing: .04em; }
-  .mtab.active { color: var(--orange); border-bottom-color: var(--orange); }
-  .form-section { display: none; }
-  .form-section.active { display: block; }
-  .form-row { margin-bottom: 14px; }
-  .form-row label { display: block; font-size: 11px; font-weight: 700; color: var(--mid); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 5px; }
-  .form-row input, .form-row select, .form-row textarea {
-    width: 100%; padding: 9px 12px; border: 1.5px solid #D5DDE8;
-    border-radius: 5px; font-size: 13px; font-family: inherit;
-    color: var(--text); transition: border-color .2s;
-  }
-  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
-    outline: none; border-color: var(--orange);
-  }
-  .form-row textarea { resize: vertical; min-height: 70px; }
-  .form-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .modal-footer { padding: 14px 22px; border-top: 1px solid #E0E7EF; display: flex; justify-content: flex-end; gap: 10px; }
-  .btn-cancel { background: none; border: 1.5px solid #D5DDE8; color: var(--mid); padding: 8px 18px; border-radius: 5px; font-size: 13px; cursor: pointer; }
-  .btn-save { background: var(--orange); color: #fff; border: none; padding: 8px 22px; border-radius: 5px; font-size: 13px; font-weight: 700; cursor: pointer; }
-  .btn-save:hover { background: #bf4700; }
+/* DETAIL GRID */
+.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;}
+.di{background:var(--mist);border-radius:6px;padding:10px 12px;}
+.di .dl{font-size:9px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.07em;}
+.di .dv{font-size:13px;font-weight:700;color:var(--navy);margin-top:2px;}
 
-  /* Add row buttons */
-  .btn-add-row { background: var(--mist); border: 1.5px dashed #9BAEC8; color: var(--navy); padding: 7px 14px; border-radius: 5px; font-size: 12px; cursor: pointer; font-weight: 600; margin-top: 10px; width: 100%; }
-  .mini-table { font-size: 12px; width: 100%; border-collapse: collapse; margin-top: 8px; }
-  .mini-table th { background: #F3F6FA; padding: 6px 8px; font-size: 10px; text-align: left; color: var(--mid); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-  .mini-table td { padding: 6px 8px; border-bottom: 1px solid #EDF1F7; }
-  .mini-table input, .mini-table select { width: 100%; padding: 4px 6px; border: 1px solid #D5DDE8; border-radius: 4px; font-size: 11px; }
-  .btn-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; }
+/* HISTORY TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-entry{border-left:3px solid var(--border);margin-left:8px;padding:0 0 20px 16px;position:relative;}
+.tl-entry::before{content:'';position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--orange);border:2px solid var(--white);}
+.tl-week{font-size:10px;font-weight:700;color:var(--orange);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.tl-card{background:var(--white);border-radius:6px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.07);font-size:12px;}
+.tl-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:4px;}
+.tl-item{min-width:100px;}.tl-item .tl-l{font-size:9px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.tl-item .tl-v{font-size:13px;font-weight:700;color:var(--navy);}
 
-  /* FOOTER */
-  .dash-footer { background: var(--navy); color: rgba(255,255,255,.35); font-size: 10px; text-align: center; padding: 10px; letter-spacing: .05em; }
+/* HEAT MAP */
+.heat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.heat-cell{border-radius:6px;padding:10px;text-align:center;font-size:10px;font-weight:700;}
+.heat-H{background:#FAE0DE;color:var(--red)}.heat-M{background:#FDF0D5;color:var(--amber)}.heat-L{background:#D4F0E3;color:var(--green)}
+.heat-lbl{font-size:9px;margin-bottom:2px;}
+
+/* SCOREBOARD */
+.sb-table{width:100%;border-collapse:collapse;font-size:11px;}
+.sb-table th{background:var(--navy);color:#fff;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:8px 10px;}
+.sb-table td{padding:8px 10px;border-bottom:1px solid #EDF1F7;}
+.sb-table tr:hover td{background:#F7F9FC;}
+
+/* CEO SUMMARY */
+.ceo-box{background:linear-gradient(135deg,var(--navy),var(--steel));color:#fff;border-radius:8px;padding:20px 22px;margin-bottom:16px;}
+.ceo-box h2{font-size:16px;font-weight:800;margin-bottom:4px;letter-spacing:.03em;}
+.ceo-box p{font-size:12px;color:rgba(255,255,255,.65);margin-bottom:14px;}
+.ceo-snap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.ceo-item{background:rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;}
+.ceo-item .cl{font-size:9px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;font-weight:700;}
+.ceo-item .cv{font-size:15px;font-weight:800;margin-top:2px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;padding:10px 18px;border-radius:6px;font-size:12px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
-  <div class="topbar-left">
-    <div class="logo-mark">PSC</div>
-    <div class="project-title">
-      <h1 id="topbarTitle">ROPA DOS</h1>
-      <p id="topbarCode">Y2023-06-R-01 &nbsp;·&nbsp; Weekly Construction Dashboard</p>
-    </div>
+  <div class="tl">
+    <div class="logo">PSC</div>
+    <div><h1>PSC Construction Dashboard</h1><p id="metaLine">Loading…</p></div>
   </div>
-  <div class="topbar-right">
-    <div class="week-badge" id="weekBadge">Week of Jun 8–13</div>
-    <button class="btn-admin" onclick="openAdmin()">⚙ Edit Data</button>
+  <div class="tr">
+    <div class="meta-pill" id="liveBadge">— LIVE</div>
+    <a href="admin.html" class="btn-admin">⚙ Admin</a>
   </div>
 </div>
 
-<!-- TABS -->
-<div class="tabs">
-  <div class="tab active" onclick="showTab('overview')">Overview</div>
-  <div class="tab" onclick="showTab('scurve')">S-Curve</div>
-  <div class="tab" onclick="showTab('safety')">Safety</div>
-  <div class="tab" onclick="showTab('labor')">Labor</div>
-  <div class="tab" onclick="showTab('procurement')">Procurement</div>
-  <div class="tab" onclick="showTab('risks')">Risks</div>
-</div>
+<div class="layout">
+  <!-- SIDENAV -->
+  <nav class="sidenav">
+    <div class="nav-item active" data-panel="overview"  onclick="nav(this)"><span class="icon">📊</span> Ops Overview</div>
+    <div class="nav-item" data-panel="schedule"  onclick="nav(this)"><span class="icon">📅</span> Schedule</div>
+    <div class="nav-item" data-panel="cost"      onclick="nav(this)"><span class="icon">💰</span> Cost &amp; CPI</div>
+    <div class="nav-item" data-panel="procurement" onclick="nav(this)"><span class="icon">📦</span> Procurement</div>
+    <div class="nav-item" data-panel="changeorders" onclick="nav(this)"><span class="icon">🔄</span> Change Orders</div>
+    <div class="nav-item" data-panel="productivity" onclick="nav(this)"><span class="icon">⚙️</span> Productivity &amp; OT</div>
+    <div class="nav-item" data-panel="safety"    onclick="nav(this)"><span class="icon">🦺</span> Safety &amp; Quality</div>
+    <div class="nav-item" data-panel="risks"     onclick="nav(this)"><span class="icon">⚠️</span> Risks &amp; Actions</div>
+    <div class="nav-item" data-panel="ceo"       onclick="nav(this)"><span class="icon">🎯</span> CEO Summary</div>
+    <div class="nav-item" data-panel="scurve"    onclick="nav(this)"><span class="icon">📈</span> S-Curve</div>
+    <div class="nav-item" data-panel="history"   onclick="nav(this)"><span class="icon">📜</span> History</div>
+  </nav>
 
-<main>
+  <main>
+    <!-- ── OVERVIEW ── -->
+    <div class="panel active" id="panel-overview">
+      <div class="sh">Project Physical Progress</div>
+      <div id="overviewProgress" class="loading">Loading…</div>
 
-<!-- ===== OVERVIEW ===== -->
-<div class="panel active" id="panel-overview">
-  <div class="kpi-row" id="kpiRow"></div>
-
-  <div class="section-header">Schedule &amp; Cost</div>
-  <div class="two-col">
-    <div class="card">
-      <h3>Physical Progress</h3>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-size:42px;font-weight:800;color:var(--navy)" id="dispProgress">44.58%</div>
-        <div style="text-align:right">
-          <div class="badge badge-green" id="dispScheduleStatus">Ahead</div>
-          <div style="font-size:11px;color:var(--mid);margin-top:4px" id="dispSV">+24 days ahead</div>
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Progress vs Budget Spend (%)</div>
+          <div class="ch sm"><canvas id="chartProgressBudget"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Budget Utilization by Project (₱M)</div>
+          <div class="ch sm"><canvas id="chartBudgetUtil"></canvas></div>
         </div>
       </div>
-      <div class="prog-bar"><div class="prog-fill" id="progBarMain" style="width:44.58%"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mid);margin-top:6px">
-        <span>0%</span><span>100%</span>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Budget Performance</h3>
-      <div style="margin-bottom:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">CPI</div>
-        <div style="font-size:36px;font-weight:800;color:var(--green)" id="dispCPI">2.62</div>
-        <div style="font-size:11px;color:var(--mid)">Cost Performance Index (>1 = under budget)</div>
-      </div>
-      <div style="display:flex;gap:12px;margin-top:10px">
-        <div style="flex:1;background:var(--mist);border-radius:6px;padding:10px">
-          <div style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Budget</div>
-          <div style="font-size:14px;font-weight:800;color:var(--navy);margin-top:3px" id="dispBudget">₱1.445B</div>
+
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Safety Snapshot</div>
+          <div id="safetySnap"></div>
         </div>
-        <div style="flex:1;background:var(--mist);border-radius:6px;padding:10px">
-          <div style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Actual Cost</div>
-          <div style="font-size:14px;font-weight:800;color:var(--navy);margin-top:3px" id="dispAC">₱551.4M</div>
+        <div class="card">
+          <div class="card-title">Immediate Action Items</div>
+          <div id="actionSnap"></div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="section-header">Period Accomplishment</div>
-  <div class="card" style="margin-bottom:24px">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px">
-      <div class="detail-item">
-        <div class="label">PA Budget</div>
-        <div class="val" id="dispPABudget">₱30.0M</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">PA Actual</div>
-        <div class="val" id="dispPAActual">₱20.2M</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">Planned Finish</div>
-        <div class="val" id="dispPlannedFinish">Dec 1, 2028</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">Forecast Finish</div>
-        <div class="val" id="dispForecastFinish">Dec 1, 2028</div>
-      </div>
-      <div class="detail-item" style="grid-column: span 2">
-        <div class="label">Critical Activities</div>
-        <div class="val" id="dispCritical" style="font-size:13px;font-weight:600">Site Security Improvement</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section-header">Recommendations</div>
-  <div class="card" style="margin-bottom:8px">
-    <div style="font-size:13px;color:var(--text);line-height:1.6" id="dispRecommendation">Maintain lead; monitor crew and material availability.</div>
-  </div>
-</div>
-
-<!-- ===== S-CURVE ===== -->
-<div class="panel" id="panel-scurve">
-  <div class="section-header">Physical Progress — S-Curve</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="chart-wrap"><canvas id="chartProgress"></canvas></div>
-  </div>
-  <div class="section-header">Cost Curve</div>
-  <div class="card">
-    <div class="chart-wrap"><canvas id="chartCost"></canvas></div>
-  </div>
-</div>
-
-<!-- ===== SAFETY ===== -->
-<div class="panel" id="panel-safety">
-  <div class="kpi-row" id="safetyKPIs"></div>
-  <div class="section-header">Safety Detail</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="detail-grid" id="safetyDetail"></div>
-  </div>
-  <div class="section-header">NCR &amp; Inspections</div>
-  <div class="card">
-    <div class="chart-wrap" style="height:200px"><canvas id="chartInspections"></canvas></div>
-  </div>
-</div>
-
-<!-- ===== LABOR ===== -->
-<div class="panel" id="panel-labor">
-  <div class="kpi-row" id="laborKPIs"></div>
-  <div class="section-header">Labor Metrics</div>
-  <div class="card">
-    <div class="chart-wrap" style="height:220px"><canvas id="chartLabor"></canvas></div>
-  </div>
-</div>
-
-<!-- ===== PROCUREMENT ===== -->
-<div class="panel" id="panel-procurement">
-  <div class="section-header">Procurement Tracker</div>
-  <div class="card">
-    <table id="procTable">
-      <thead><tr><th>Item</th><th>Vendor</th><th>Required</th><th>Delivery</th><th>Status</th><th>Buffer</th><th>Remarks</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ===== RISKS ===== -->
-<div class="panel" id="panel-risks">
-  <div class="section-header">Risk Register</div>
-  <div class="card">
-    <table id="riskTable">
-      <thead><tr><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th><th>Due</th><th>Mitigation</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-</main>
-
-<div class="dash-footer">PSC Construction Dashboard · Primary Group of Builders · Powered by claude.ai</div>
-
-<!-- ===== ADMIN MODAL ===== -->
-<div class="modal-overlay" id="adminModal">
-  <div class="modal">
-    <div class="modal-head">
-      <h2>⚙ Edit Dashboard Data</h2>
-      <button onclick="closeAdmin()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-tabs">
-        <div class="mtab active" onclick="showMTab('mStatus')">Status</div>
-        <div class="mtab" onclick="showMTab('mProcurement')">Procurement</div>
-        <div class="mtab" onclick="showMTab('mRisks')">Risks</div>
-        <div class="mtab" onclick="showMTab('mMeta')">Project Info</div>
-      </div>
-
-      <!-- STATUS FORM -->
-      <div class="form-section active" id="mStatus">
-        <div class="form-two">
-          <div class="form-row"><label>Week Of</label><input id="f_weekOf" type="text"></div>
-          <div class="form-row"><label>Prepared By</label><input id="f_preparedBy" type="text"></div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Physical Progress (%)</label><input id="f_progress" type="number" step="0.01"></div>
-          <div class="form-row"><label>Schedule Status</label>
-            <select id="f_schedStatus"><option>Ahead</option><option>On Track</option><option>Delayed</option></select>
-          </div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Schedule Variance (days)</label><input id="f_sv" type="number"></div>
-          <div class="form-row"><label>Cost Status</label>
-            <select id="f_costStatus"><option>Within Budget</option><option>Over Budget</option></select>
-          </div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Health</label>
-            <select id="f_health"><option>Good</option><option>Fair</option><option>At Risk</option></select>
-          </div>
-          <div class="form-row"><label>CPI</label><input id="f_cpi" type="number" step="0.0001"></div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Budget (₱)</label><input id="f_budget" type="number"></div>
-          <div class="form-row"><label>Actual Cost (₱)</label><input id="f_ac" type="number"></div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Planned Finish</label><input id="f_plannedFinish" type="text"></div>
-          <div class="form-row"><label>Forecast Finish</label><input id="f_forecastFinish" type="text"></div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>PA Budget (₱)</label><input id="f_paBudget" type="number"></div>
-          <div class="form-row"><label>PA Actual (₱)</label><input id="f_paActual" type="number"></div>
-        </div>
-        <div class="form-row"><label>Critical Activities</label><textarea id="f_critical"></textarea></div>
-        <div class="form-row"><label>Schedule Recommendation</label><textarea id="f_recommendation"></textarea></div>
-        <div class="section-header" style="margin-top:18px">Safety</div>
-        <div class="form-two">
-          <div class="form-row"><label>Safe Man-Hours</label><input id="f_manHours" type="number" step="0.1"></div>
-          <div class="form-row"><label>Inspections Due</label><input id="f_insDue" type="number"></div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Inspections Done</label><input id="f_insDone" type="number"></div>
-          <div class="form-row"><label>NCR Open</label><input id="f_ncr" type="number"></div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Incidents</label><input id="f_incidents" type="number"></div>
-          <div class="form-row"><label>Near Miss</label><input id="f_nearMiss" type="number"></div>
-        </div>
-        <div class="form-two">
-          <div class="form-row"><label>Last Toolbox Meeting</label><input id="f_toolbox" type="text"></div>
-          <div class="form-row"><label>DDI (%)</label><input id="f_ddi" type="number" step="0.01"></div>
-        </div>
-        <div class="form-row"><label>Safety Action</label><textarea id="f_safetyAction"></textarea></div>
-        <div class="section-header" style="margin-top:18px">Labor</div>
-        <div class="form-two">
-          <div class="form-row"><label>OT Rate (%)</label><input id="f_otRate" type="number" step="0.01"></div>
-          <div class="form-row"><label>OT Baseline (%)</label><input id="f_otBaseline" type="number" step="0.01"></div>
-        </div>
-        <div class="form-row"><label>OLC/ALC</label><input id="f_olcalc" type="number" step="0.001"></div>
-      </div>
-
-      <!-- PROCUREMENT FORM -->
-      <div class="form-section" id="mProcurement">
-        <table class="mini-table" id="procEdit">
-          <thead><tr><th>Item</th><th>Vendor</th><th>Req'd Date</th><th>Delivery</th><th>Status</th><th>Buffer</th><th>Remarks</th><th></th></tr></thead>
+      <div class="card">
+        <div class="card-title">Procurement Quick View</div>
+        <table class="tbl" id="procSnap">
+          <thead><tr><th>Project</th><th>Item</th><th>Vendor</th><th>Required</th><th>Status</th></tr></thead>
           <tbody></tbody>
         </table>
-        <button class="btn-add-row" onclick="addProcRow()">+ Add Row</button>
       </div>
+    </div>
 
-      <!-- RISKS FORM -->
-      <div class="form-section" id="mRisks">
-        <table class="mini-table" id="riskEdit">
-          <thead><tr><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th><th>Due</th><th>Mitigation</th><th></th></tr></thead>
+    <!-- ── SCHEDULE ── -->
+    <div class="panel" id="panel-schedule">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Schedule Variance (Days Ahead)</div>
+          <div class="ch"><canvas id="chartSV"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Project Timeline Overview</div>
+          <table class="tbl" id="schedTable">
+            <thead><tr><th>Project</th><th>Planned Finish</th><th>Forecast</th><th>Variance</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Critical Path Activities</div>
+        <div id="criticalList"></div>
+      </div>
+    </div>
+
+    <!-- ── COST ── -->
+    <div class="panel" id="panel-cost">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">CPI by Project (>1.0 = Good)</div>
+          <div class="ch"><canvas id="chartCPI"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CPI Comparison</div>
+          <div class="ch"><canvas id="chartCPIBar"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detailed Cost by Project</div>
+        <table class="tbl" id="costTable">
+          <thead><tr><th>Project</th><th>Approved Budget (₱)</th><th>Actual Cost (₱)</th><th>Remaining (₱)</th><th>CPI</th><th>Status</th></tr></thead>
           <tbody></tbody>
         </table>
-        <button class="btn-add-row" onclick="addRiskRow()">+ Add Row</button>
       </div>
+    </div>
 
-      <!-- META FORM -->
-      <div class="form-section" id="mMeta">
-        <div class="form-two">
-          <div class="form-row"><label>Project Name</label><input id="f_projectName" type="text"></div>
-          <div class="form-row"><label>Project Code</label><input id="f_projectCode" type="text"></div>
+    <!-- ── PROCUREMENT ── -->
+    <div class="panel" id="panel-procurement">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Status Distribution</div>
+          <div class="ch sm"><canvas id="chartProcStatus"></canvas></div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="dg" id="procKPIs"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Procurement Detail</div>
+        <table class="tbl" id="procTable">
+          <thead><tr><th>Project</th><th>Item</th><th>Vendor</th><th>Required</th><th>Delivery</th><th>Status</th><th>Buffer</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── CHANGE ORDERS ── -->
+    <div class="panel" id="panel-changeorders">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">CO Value by Project (₱M)</div>
+          <div class="ch"><canvas id="chartCOVal"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CO Status Breakdown</div>
+          <div class="ch"><canvas id="chartCOStatus"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Change Order Register</div>
+        <table class="tbl" id="coTable">
+          <thead><tr><th>Project</th><th>CO No.</th><th>Description</th><th>Amount (₱)</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PRODUCTIVITY ── -->
+    <div class="panel" id="panel-productivity">
+      <div class="sh">Operations Management Division — Housing Projects</div>
+      <div class="card">
+        <div class="card-title">Project Scoreboard</div>
+        <div style="overflow-x:auto">
+          <table class="sb-table" id="scoreTable">
+            <thead><tr>
+              <th>Project</th><th>PR%</th><th>Accmp. to Date</th><th>Variance (Days)</th>
+              <th>DDI%</th><th>OT%</th><th>Baseline</th>
+              <th>Ranks Cost (₱)</th><th>Staff Cost (₱)</th><th>Output LC (₱)</th><th>OLC/ALC</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Project PR vs PR Baseline</div>
+          <div class="ch"><canvas id="chartPR"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">DDI%, OT% vs Baseline</div>
+          <div class="ch"><canvas id="chartDDI"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Labor Cost Summary (₱)</div>
+        <table class="tbl" id="laborTable">
+          <thead><tr><th>Project</th><th>Ranks Cost (₱)</th><th>Staff Cost (₱)</th><th>Output Labor Cost (₱)</th><th>OLC/ALC</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SAFETY ── -->
+    <div class="panel" id="panel-safety">
+      <div class="kpi-grid" id="safetyKPIs"></div>
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Incidents &amp; Near-Miss</div>
+          <div class="ch sm"><canvas id="chartIncidents"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Inspection Completion Rate</div>
+          <div class="ch sm"><canvas id="chartInspRate"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detailed Safety Report</div>
+        <table class="tbl" id="safetyTable">
+          <thead><tr><th>Project</th><th>Insp Due</th><th>Done</th><th>Rate</th><th>Man-Hours</th><th>NCR Open</th><th>Incidents</th><th>Near Miss</th><th>Last Toolbox</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── RISKS ── -->
+    <div class="panel" id="panel-risks">
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Risk Register</div>
+          <table class="tbl" id="riskTable">
+            <thead><tr><th>Project</th><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th><th>Due</th><th>Mitigation</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Risk Heat Map</div>
+          <div class="heat-grid" id="heatMap"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sh" style="margin-top:0">Action Items</div>
+        <table class="tbl" id="actionTable">
+          <thead><tr><th>#</th><th>Project</th><th>Issue</th><th>Priority</th><th>Action</th><th>Responsible</th><th>Due Date</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── CEO ── -->
+    <div class="panel" id="panel-ceo">
+      <div class="ceo-box">
+        <h2>Weekly Executive Summary</h2>
+        <p>PSC Construction Operations | Bohol, Philippines</p>
+        <div class="ceo-snap" id="ceoSnap"></div>
+      </div>
+      <div class="sh">Project Snapshots</div>
+      <div id="ceoProjects"></div>
+      <div class="sh">CEO Recommendations</div>
+      <table class="tbl" id="ceoRecs">
+        <thead><tr><th>#</th><th>Recommendation</th><th>Action</th><th>Timeline</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- ── S-CURVE ── -->
+    <div class="panel" id="panel-scurve">
+      <div class="sh">Per-Project S-Curves — Planned vs Actual vs Forecast</div>
+      <div id="scurveProjects"></div>
+      <div class="sh">Portfolio Cumulative S-Curve</div>
+      <div class="two">
+        <div class="card">
+          <div class="card-title">Portfolio — Cumulative Physical Progress (%)</div>
+          <div class="ch lg"><canvas id="chartPortProgress"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Portfolio — Cumulative Cost (₱M)</div>
+          <div class="ch lg"><canvas id="chartPortCost"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Earned Value Management (EVM) Summary — Latest Period</div>
+        <div style="overflow-x:auto">
+          <table class="tbl" id="evmTable">
+            <thead><tr><th>Project</th><th>BAC (₱)</th><th>PV (₱)</th><th>EV (₱)</th><th>AC (₱)</th><th>SV</th><th>CV</th><th>SPI</th><th>CPI</th><th>EAC (₱)</th><th>VAC (₱)</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeAdmin()">Cancel</button>
-      <button class="btn-save" onclick="saveAdmin()">Save Changes</button>
+
+    <!-- ── HISTORY ── -->
+    <div class="panel" id="panel-history">
+      <div class="sh">Portfolio Progress Trend — Weekly History</div>
+      <div class="three">
+        <div class="card">
+          <div class="card-title">Physical Progress % — All Projects</div>
+          <div class="ch sm"><canvas id="chartHistProg"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CPI Trend — All Projects</div>
+          <div class="ch sm"><canvas id="chartHistCPI"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Actual Cost (₱M)</div>
+          <div class="ch sm"><canvas id="chartHistCost"></canvas></div>
+        </div>
+      </div>
+      <div class="sh">Weekly Snapshot Log</div>
+      <div id="historyLog" class="loading">Loading history…</div>
     </div>
-  </div>
+
+  </main>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// ====================== DATA STORE ======================
-let D = {
-  meta: {
-    projectName: "ROPA DOS",
-    projectCode: "Y2023-06-R-01"
-  },
-  status: {
-    weekOf: "June 8–13",
-    preparedBy: "Ariel M. Canino",
-    progress: 44.58,
-    schedStatus: "Ahead",
-    sv: 24,
-    costStatus: "Within Budget",
-    health: "Good",
-    cpi: 2.6207,
-    budget: 1445000000,
-    ac: 551383826.11,
-    fac: 1445000000,
-    plannedFinish: "Dec 1, 2028",
-    forecastFinish: "Dec 1, 2028",
-    critical: "Site Security Improvement",
-    recommendation: "Maintain lead; monitor crew and material availability.",
-    paBudget: 30000000,
-    paActual: 20220014,
-    // Safety
-    manHours: 1192973.7,
-    insDue: 6,
-    insDone: 2,
-    ncr: 0,
-    incidents: 0,
-    nearMiss: 0,
-    toolbox: "June 13, 2026",
-    safetyAction: "Immediate start of Construction of Guardhouse",
-    ddi: 29,
-    // Labor
-    otRate: 16.86,
-    otBaseline: 20,
-    olcalc: 0.77
-  },
-  scurve: [
-    {period:"May 2024",   planned:0.41,  actual:0.64,  plannedCost:596632000,    actualCost:931328000},
-    {period:"Jun 2024",   planned:0.97,  actual:1.24,  plannedCost:1411544000,   actualCost:1804448000},
-    {period:"Jul 2024",   planned:2.25,  actual:2.29,  plannedCost:3274200000,   actualCost:3332408000},
-    {period:"Aug 2024",   planned:3.28,  actual:3.34,  plannedCost:4773056000,   actualCost:4860368000},
-    {period:"Sep 2024",   planned:4.24,  actual:4.40,  plannedCost:6170048000,   actualCost:6402880000},
-    {period:"Oct 2024",   planned:5.64,  actual:5.92,  plannedCost:8207328000,   actualCost:8614784000},
-    {period:"Nov 2024",   planned:6.72,  actual:7.46,  plannedCost:9778944000,   actualCost:10855792000},
-    {period:"Dec 2024",   planned:7.95,  actual:8.96,  plannedCost:11568840000,  actualCost:13038592000},
-    {period:"Jan 2025",   planned:10.82, actual:10.72, plannedCost:15745264000,  actualCost:15599744000},
-    {period:"Feb 2025",   planned:12.60, actual:13.27, plannedCost:18335520000,  actualCost:19310504000},
-    {period:"Mar 2025",   planned:14.20, actual:15.22, plannedCost:20663840000,  actualCost:22148144000},
-    {period:"Apr 2025",   planned:16.75, actual:17.26, plannedCost:24374600000,  actualCost:25116752000},
-    {period:"May 2025",   planned:19.26, actual:19.32, plannedCost:28027152000,  actualCost:28114464000},
-    {period:"Jun 2025",   planned:20.56, actual:21.41, plannedCost:29918912000,  actualCost:31155832000},
-    {period:"Jul 2025",   planned:22.60, actual:23.51, plannedCost:32887520000,  actualCost:34211752000},
-    {period:"Aug 2025",   planned:24.69, actual:25.65, plannedCost:35928888000,  actualCost:37325880000},
-    {period:"Sep 2025",   planned:26.78, actual:27.83, plannedCost:38970256000,  actualCost:40498216000},
-    {period:"Oct 2025",   planned:28.84, actual:30.06, plannedCost:41967968000,  actualCost:43743312000},
-    {period:"Nov 2025",   planned:30.93, actual:32.28, plannedCost:45009336000,  actualCost:46973856000},
-    {period:"Dec 2025",   planned:32.96, actual:34.33, plannedCost:47963392000,  actualCost:49957016000},
-    {period:"Jan 2026",   planned:35.00, actual:36.42, plannedCost:50932000000,  actualCost:52998384000},
-    {period:"Feb 2026",   planned:37.03, actual:38.54, plannedCost:53886056000,  actualCost:56083408000},
-    {period:"Mar 2026",   planned:39.12, actual:40.62, plannedCost:56927424000,  actualCost:59110224000},
-    {period:"Apr 2026",   planned:41.12, actual:42.57, plannedCost:59837824000,  actualCost:61947864000},
-    {period:"May 2026",   planned:43.18, actual:44.58, plannedCost:62835536000,  actualCost:64872816000},
-    {period:"Jun 2026",   planned:45.24, actual:null,  plannedCost:65833248000,  actualCost:null},
-    {period:"Jul 2026",   planned:47.33, actual:null,  plannedCost:68874616000,  actualCost:null},
-    {period:"Aug 2026",   planned:49.37, actual:null,  plannedCost:71843224000,  actualCost:null},
-    {period:"Sep 2026",   planned:51.47, actual:null,  plannedCost:74899144000,  actualCost:null},
-    {period:"Oct 2026",   planned:53.55, actual:null,  plannedCost:77925960000,  actualCost:null},
-    {period:"Nov 2026",   planned:55.65, actual:null,  plannedCost:80981880000,  actualCost:null},
-    {period:"Dec 2026",   planned:57.72, actual:null,  plannedCost:83994144000,  actualCost:null},
-    {period:"Jan 2027",   planned:59.83, actual:null,  plannedCost:87064616000,  actualCost:null},
-    {period:"Feb 2027",   planned:61.86, actual:null,  plannedCost:90018672000,  actualCost:null},
-    {period:"Mar 2027",   planned:63.89, actual:null,  plannedCost:92972728000,  actualCost:null},
-    {period:"Apr 2027",   planned:65.89, actual:null,  plannedCost:95883128000,  actualCost:null},
-  ],
-  procurement: [
-    {item:"Elevator", vendor:"Hyundai", required:"May 10, 2026", delivery:"Apr 26, 2026", status:"Delivered", buffer:"Early +14d", remarks:"No action needed — delivered early"}
-  ],
-  risks: [
-    {desc:"Price Escalation", impact:"Medium", status:"Ongoing", owner:"Project Manager", due:"Jun 2026", mitigation:"Formalize escalation contingency plan: bulk-buy contracts, price lock agreements, escalation clauses."}
-  ]
-};
+// ══════════════════════════════════════════
+//  CONFIG — fill your Supabase credentials
+// ══════════════════════════════════════════
+const SUPABASE_URL = 'https://ppmvfkmltfxmllnlinsl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwbXZma21sdGZ4bWxsbmxpbnNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1ODA5ODEsImV4cCI6MjA5NzE1Njk4MX0.gdJKESBUoLxqTAh6y_dQlZMNgPq3LlQXoBopNd1DAk4';
 
-// ====================== HELPERS ======================
-function peso(v) {
-  if (!v && v !== 0) return '—';
-  if (Math.abs(v) >= 1e9) return '₱' + (v/1e9).toFixed(2) + 'B';
-  if (Math.abs(v) >= 1e6) return '₱' + (v/1e6).toFixed(1) + 'M';
-  return '₱' + v.toLocaleString();
-}
-function badgeClass(val, type) {
-  if (type === 'schedule') return val === 'Ahead' ? 'badge-green' : val === 'On Track' ? 'badge-navy' : 'badge-red';
-  if (type === 'health')   return val === 'Good'  ? 'badge-green' : val === 'Fair'     ? 'badge-amber': 'badge-red';
-  if (type === 'cost')     return val === 'Within Budget' ? 'badge-green' : 'badge-red';
-  return 'badge-navy';
+// ── API helpers ──
+const h = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
+async function sbGet(table,params=''){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{headers:h});
+  return r.json();
 }
 
-// ====================== RENDER ======================
-function renderAll() {
-  renderOverview();
-  renderSCurve();
-  renderSafety();
-  renderLabor();
-  renderProcurement();
-  renderRisks();
-}
+// ── State ──
+let PROJECTS=[], LATEST={}, HISTORY=[];
+let charts={};
 
-function renderOverview() {
-  const s = D.status;
-  // topbar
-  document.getElementById('topbarTitle').textContent = D.meta.projectName;
-  document.getElementById('topbarCode').textContent = D.meta.projectCode + ' · Weekly Construction Dashboard';
-  document.getElementById('weekBadge').textContent = 'Week of ' + s.weekOf;
-  // KPIs
-  const kpis = [
-    {label:'Physical Progress', value: s.progress.toFixed(2)+'%', sub:'vs '+D.scurve.filter(r=>r.actual!==null).slice(-2,-1)[0]?.planned?.toFixed(2)+'% planned', color:'orange'},
-    {label:'Schedule Status',   value: `<span class="badge ${badgeClass(s.schedStatus,'schedule')}">${s.schedStatus}</span>`, sub:`Variance: ${s.sv>0?'+':''}${s.sv}d`, color:''},
-    {label:'Health',            value: `<span class="badge ${badgeClass(s.health,'health')}">${s.health}</span>`, sub:'Overall project health', color:''},
-    {label:'CPI',               value: s.cpi.toFixed(2), sub:'Cost Performance Index', color: s.cpi >= 1 ? 'green' : 'red'},
-  ];
-  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
-    <div class="kpi ${k.color}">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value">${k.value}</div>
-      <div class="kpi-sub">${k.sub}</div>
-    </div>`).join('');
-  // progress card
-  document.getElementById('dispProgress').textContent = s.progress.toFixed(2) + '%';
-  document.getElementById('dispScheduleStatus').className = 'badge ' + badgeClass(s.schedStatus,'schedule');
-  document.getElementById('dispScheduleStatus').textContent = s.schedStatus;
-  document.getElementById('dispSV').textContent = (s.sv>0?'+':'')+s.sv+' days';
-  document.getElementById('progBarMain').style.width = s.progress + '%';
-  // budget
-  document.getElementById('dispCPI').textContent = s.cpi.toFixed(2);
-  document.getElementById('dispCPI').style.color = s.cpi >= 1 ? 'var(--green)' : 'var(--red)';
-  document.getElementById('dispBudget').textContent = peso(s.budget);
-  document.getElementById('dispAC').textContent = peso(s.ac);
-  // PA
-  document.getElementById('dispPABudget').textContent = peso(s.paBudget);
-  document.getElementById('dispPAActual').textContent = peso(s.paActual);
-  document.getElementById('dispPlannedFinish').textContent = s.plannedFinish;
-  document.getElementById('dispForecastFinish').textContent = s.forecastFinish;
-  document.getElementById('dispCritical').textContent = s.critical;
-  document.getElementById('dispRecommendation').textContent = s.recommendation;
-}
-
-let chartP, chartC, chartI, chartL;
-function renderSCurve() {
-  const labels = D.scurve.map(r=>r.period);
-  const planned = D.scurve.map(r=>r.planned);
-  const actual  = D.scurve.map(r=>r.actual);
-  const plannedCost = D.scurve.map(r=>r.plannedCost ? r.plannedCost/1e9 : null);
-  const actualCost  = D.scurve.map(r=>r.actualCost  ? r.actualCost/1e9  : null);
-
-  if (chartP) chartP.destroy();
-  chartP = new Chart(document.getElementById('chartProgress'), {
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {label:'Planned (%)', data:planned, borderColor:'#2A3F6B', backgroundColor:'rgba(42,63,107,.08)', tension:.4, pointRadius:2, fill:true},
-        {label:'Actual (%)',  data:actual,  borderColor:'#E65100', backgroundColor:'rgba(230,81,0,.08)',  tension:.4, pointRadius:3, fill:true, spanGaps:false}
-      ]
-    },
-    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{maxRotation:45,font:{size:10}}}, y:{title:{display:true,text:'Progress (%)'},ticks:{callback:v=>v+'%'}}},
-      plugins:{legend:{position:'top',labels:{font:{size:11}}}}
-    }
-  });
-
-  if (chartC) chartC.destroy();
-  chartC = new Chart(document.getElementById('chartCost'), {
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {label:'Planned Cost (₱B)', data:plannedCost, borderColor:'#2A3F6B', backgroundColor:'rgba(42,63,107,.08)', tension:.4, pointRadius:2, fill:true},
-        {label:'Actual Cost (₱B)',  data:actualCost,  borderColor:'#E65100', backgroundColor:'rgba(230,81,0,.08)',  tension:.4, pointRadius:3, fill:true, spanGaps:false}
-      ]
-    },
-    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{maxRotation:45,font:{size:10}}}, y:{title:{display:true,text:'₱ Billion'}, ticks:{callback:v=>'₱'+v.toFixed(0)+'B'}}},
-      plugins:{legend:{position:'top',labels:{font:{size:11}}}}
-    }
-  });
-}
-
-function renderSafety() {
-  const s = D.status;
-  const insRate = s.insDue > 0 ? Math.round(s.insDone/s.insDue*100) : 0;
-  document.getElementById('safetyKPIs').innerHTML = [
-    {label:'Safe Man-Hours', value: (s.manHours/1e6).toFixed(3)+'M', sub:'Cumulative', color:'green'},
-    {label:'Inspections', value: s.insDone+'/'+s.insDue, sub:insRate+'% completion rate', color: insRate>=80?'green':'amber'},
-    {label:'NCR Open', value: s.ncr, sub:'Non-Conformance Reports', color: s.ncr===0?'green':'red'},
-    {label:'Incidents', value: s.incidents, sub: s.incidents===0?'Zero incidents ✓':'Review required', color: s.incidents===0?'green':'red'},
-    {label:'Near Miss', value: s.nearMiss, sub:'Reported near misses', color: s.nearMiss===0?'green':'amber'},
-    {label:'DDI', value: s.ddi+'%', sub:'Defect Density Index', color: s.ddi<=30?'green':'amber'},
-  ].map(k=>`<div class="kpi ${k.color}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
-
-  document.getElementById('safetyDetail').innerHTML = `
-    <div class="detail-item"><div class="label">Last Toolbox</div><div class="val">${s.toolbox}</div></div>
-    <div class="detail-item"><div class="label">Safety Action</div><div class="val" style="font-size:12px;font-weight:600">${s.safetyAction}</div></div>
-  `;
-
-  if (chartI) chartI.destroy();
-  chartI = new Chart(document.getElementById('chartInspections'), {
-    type:'bar',
-    data:{
-      labels:['Inspections Due','Inspections Done','NCR Open','Incidents','Near Miss'],
-      datasets:[{
-        data:[s.insDue, s.insDone, s.ncr, s.incidents, s.nearMiss],
-        backgroundColor:['#2A3F6B','#1A7A4A','#C0392B','#C0392B','#D4830A'],
-        borderRadius:5
-      }]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
-  });
-}
-
-function renderLabor() {
-  const s = D.status;
-  document.getElementById('laborKPIs').innerHTML = [
-    {label:'OT Rate', value: s.otRate+'%', sub:'vs '+s.otBaseline+'% baseline', color: s.otRate <= s.otBaseline ? 'green' : 'amber'},
-    {label:'OLC/ALC', value: s.olcalc.toFixed(3), sub:'Output/Allowed Labor Cost', color: s.olcalc <= 1 ? 'green' : 'red'},
-    {label:'DDI', value: s.ddi+'%', sub:'Defect Density Index', color: s.ddi<=30?'green':'amber'},
-  ].map(k=>`<div class="kpi ${k.color}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
-
-  if (chartL) chartL.destroy();
-  chartL = new Chart(document.getElementById('chartLabor'), {
-    type:'bar',
-    data:{
-      labels:['OT Rate (%)','OT Baseline (%)','OLC/ALC (×10)'],
-      datasets:[{
-        data:[s.otRate, s.otBaseline, s.olcalc*10],
-        backgroundColor:['#E65100','#2A3F6B','#1A7A4A'],
-        borderRadius:6
-      }]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true}}}
-  });
-}
-
-function renderProcurement() {
-  const tbody = document.querySelector('#procTable tbody');
-  tbody.innerHTML = D.procurement.map(r=>`<tr>
-    <td><strong>${r.item||'—'}</strong></td>
-    <td>${r.vendor||'—'}</td>
-    <td>${r.required||'—'}</td>
-    <td>${r.delivery||'—'}</td>
-    <td>${statusBadge(r.status)}</td>
-    <td>${r.buffer||'—'}</td>
-    <td>${r.remarks||'—'}</td>
-  </tr>`).join('');
-}
-
-function statusBadge(s) {
-  const m = {Delivered:'badge-green','In Progress':'badge-amber',Delayed:'badge-red',Pending:'badge-navy'};
-  return `<span class="badge ${m[s]||'badge-navy'}">${s||'—'}</span>`;
-}
-
-function renderRisks() {
-  const tbody = document.querySelector('#riskTable tbody');
-  tbody.innerHTML = D.risks.map(r=>`<tr>
-    <td><strong>${r.desc||'—'}</strong></td>
-    <td>${impactBadge(r.impact)}</td>
-    <td><span class="badge badge-amber">${r.status||'—'}</span></td>
-    <td>${r.owner||'—'}</td>
-    <td>${r.due||'—'}</td>
-    <td>${r.mitigation||'—'}</td>
-  </tr>`).join('');
-}
-
-function impactBadge(v) {
-  const m = {High:'badge-red',Medium:'badge-amber',Low:'badge-green'};
-  return `<span class="badge ${m[v]||'badge-navy'}">${v||'—'}</span>`;
-}
-
-// ====================== TABS ======================
-function showTab(id) {
+// ── Nav ──
+function nav(el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  event.target.classList.add('active');
-  if (id==='scurve') setTimeout(renderSCurve,50);
-  if (id==='safety') setTimeout(renderSafety,50);
-  if (id==='labor')  setTimeout(renderLabor,50);
+  el.classList.add('active');
+  document.getElementById('panel-'+el.dataset.panel).classList.add('active');
+  lazyRender(el.dataset.panel);
 }
 
-// ====================== ADMIN MODAL ======================
-function openAdmin() {
-  const s = D.status;
-  // populate status fields
-  document.getElementById('f_weekOf').value        = s.weekOf;
-  document.getElementById('f_preparedBy').value    = s.preparedBy;
-  document.getElementById('f_progress').value      = s.progress;
-  document.getElementById('f_schedStatus').value   = s.schedStatus;
-  document.getElementById('f_sv').value            = s.sv;
-  document.getElementById('f_costStatus').value    = s.costStatus;
-  document.getElementById('f_health').value        = s.health;
-  document.getElementById('f_cpi').value           = s.cpi;
-  document.getElementById('f_budget').value        = s.budget;
-  document.getElementById('f_ac').value            = s.ac;
-  document.getElementById('f_plannedFinish').value = s.plannedFinish;
-  document.getElementById('f_forecastFinish').value= s.forecastFinish;
-  document.getElementById('f_critical').value      = s.critical;
-  document.getElementById('f_recommendation').value= s.recommendation;
-  document.getElementById('f_paBudget').value      = s.paBudget;
-  document.getElementById('f_paActual').value      = s.paActual;
-  document.getElementById('f_manHours').value      = s.manHours;
-  document.getElementById('f_insDue').value        = s.insDue;
-  document.getElementById('f_insDone').value       = s.insDone;
-  document.getElementById('f_ncr').value           = s.ncr;
-  document.getElementById('f_incidents').value     = s.incidents;
-  document.getElementById('f_nearMiss').value      = s.nearMiss;
-  document.getElementById('f_toolbox').value       = s.toolbox;
-  document.getElementById('f_safetyAction').value  = s.safetyAction;
-  document.getElementById('f_ddi').value           = s.ddi;
-  document.getElementById('f_otRate').value        = s.otRate;
-  document.getElementById('f_otBaseline').value    = s.otBaseline;
-  document.getElementById('f_olcalc').value        = s.olcalc;
-  document.getElementById('f_projectName').value   = D.meta.projectName;
-  document.getElementById('f_projectCode').value   = D.meta.projectCode;
-  // procurement edit table
-  renderProcEdit();
-  renderRiskEdit();
-  document.getElementById('adminModal').classList.add('open');
+// ── Helpers ──
+function peso(v,decimals=0){if(!v&&v!==0)return '—';if(Math.abs(v)>=1e9)return '₱'+(v/1e9).toFixed(2)+'B';if(Math.abs(v)>=1e6)return '₱'+(v/1e6).toFixed(1)+'M';return '₱'+Number(v).toLocaleString();}
+function pct(v){return v==null?'—':Number(v).toFixed(2)+'%';}
+function num(v,d=2){return v==null?'—':Number(v).toFixed(d);}
+function badge(v,type){
+  if(type==='sched')return v==='Ahead'?'<span class="badge bg">Ahead</span>':v==='On Track'?'<span class="badge bn">On Track</span>':'<span class="badge br">Delayed</span>';
+  if(type==='health')return v==='Good'?'<span class="badge bg">Good</span>':v==='Fair'?'<span class="badge ba">Fair</span>':'<span class="badge br">At Risk</span>';
+  if(type==='cost')return v==='Within Budget'?'<span class="badge bg">Within Budget</span>':'<span class="badge br">Over Budget</span>';
+  if(type==='impact')return v==='High'?'<span class="badge br">High</span>':v==='Medium'?'<span class="badge ba">Medium</span>':'<span class="badge bg">Low</span>';
+  if(type==='proc'){const m={Delivered:'bg','In Progress':'ba',Delayed:'br',Pending:'bn'};return `<span class="badge ${m[v]||'bn'}">${v||'—'}</span>`;}
+  return `<span class="badge bn">${v||'—'}</span>`;
+}
+function mkChart(id,type,data,opts={}){
+  if(charts[id])charts[id].destroy();
+  const ctx=document.getElementById(id);
+  if(!ctx)return;
+  charts[id]=new Chart(ctx,{type,data,options:{responsive:true,maintainAspectRatio:false,...opts}});
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── LOAD DATA ──
+async function loadData(){
+  try{
+    [PROJECTS] = await Promise.all([sbGet('psc_projects','is_active=eq.true&order=name')]);
+    // Get latest approved submission per project
+    const subs = await sbGet('psc_submissions','status=eq.approved&order=submitted_at.desc');
+    LATEST={};
+    subs.forEach(s=>{if(!LATEST[s.project_id])LATEST[s.project_id]=s;});
+    // History
+    HISTORY = await sbGet('psc_history','order=approved_at.desc&limit=100');
+    // Meta
+    const metas = await sbGet('psc_report_meta','order=updated_at.desc&limit=1');
+    const meta = metas[0];
+    if(meta){
+      document.getElementById('metaLine').textContent = `${meta.week_of||''} · Prepared by ${meta.prepared_by||''}`;
+      document.getElementById('liveBadge').textContent = `${meta.week_of||''} LIVE`;
+    }
+    renderAll();
+  }catch(e){
+    console.error(e);
+    document.querySelectorAll('.loading').forEach(el=>el.textContent='Error loading data. Check Supabase config.');
+  }
 }
 
-function closeAdmin() { document.getElementById('adminModal').classList.remove('open'); }
-
-function showMTab(id) {
-  document.querySelectorAll('.form-section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
+function renderAll(){
+  renderOverview();
+  lazyRender('overview');
 }
 
-function saveAdmin() {
-  const s = D.status;
-  s.weekOf        = document.getElementById('f_weekOf').value;
-  s.preparedBy    = document.getElementById('f_preparedBy').value;
-  s.progress      = parseFloat(document.getElementById('f_progress').value)||0;
-  s.schedStatus   = document.getElementById('f_schedStatus').value;
-  s.sv            = parseFloat(document.getElementById('f_sv').value)||0;
-  s.costStatus    = document.getElementById('f_costStatus').value;
-  s.health        = document.getElementById('f_health').value;
-  s.cpi           = parseFloat(document.getElementById('f_cpi').value)||0;
-  s.budget        = parseFloat(document.getElementById('f_budget').value)||0;
-  s.ac            = parseFloat(document.getElementById('f_ac').value)||0;
-  s.plannedFinish = document.getElementById('f_plannedFinish').value;
-  s.forecastFinish= document.getElementById('f_forecastFinish').value;
-  s.critical      = document.getElementById('f_critical').value;
-  s.recommendation= document.getElementById('f_recommendation').value;
-  s.paBudget      = parseFloat(document.getElementById('f_paBudget').value)||0;
-  s.paActual      = parseFloat(document.getElementById('f_paActual').value)||0;
-  s.manHours      = parseFloat(document.getElementById('f_manHours').value)||0;
-  s.insDue        = parseInt(document.getElementById('f_insDue').value)||0;
-  s.insDone       = parseInt(document.getElementById('f_insDone').value)||0;
-  s.ncr           = parseInt(document.getElementById('f_ncr').value)||0;
-  s.incidents     = parseInt(document.getElementById('f_incidents').value)||0;
-  s.nearMiss      = parseInt(document.getElementById('f_nearMiss').value)||0;
-  s.toolbox       = document.getElementById('f_toolbox').value;
-  s.safetyAction  = document.getElementById('f_safetyAction').value;
-  s.ddi           = parseFloat(document.getElementById('f_ddi').value)||0;
-  s.otRate        = parseFloat(document.getElementById('f_otRate').value)||0;
-  s.otBaseline    = parseFloat(document.getElementById('f_otBaseline').value)||0;
-  s.olcalc        = parseFloat(document.getElementById('f_olcalc').value)||0;
-  D.meta.projectName = document.getElementById('f_projectName').value;
-  D.meta.projectCode = document.getElementById('f_projectCode').value;
-  // procurement
-  D.procurement = [];
-  document.querySelectorAll('#procEdit tbody tr').forEach(tr=>{
-    const cells = tr.querySelectorAll('input, select');
-    D.procurement.push({
-      item:cells[0].value, vendor:cells[1].value, required:cells[2].value,
-      delivery:cells[3].value, status:cells[4].value, buffer:cells[5].value, remarks:cells[6].value
+function lazyRender(panel){
+  const fn={
+    overview:renderOverview, schedule:renderSchedule, cost:renderCost,
+    procurement:renderProcurement, changeorders:renderChangeOrders,
+    productivity:renderProductivity, safety:renderSafety,
+    risks:renderRisks, ceo:renderCEO, scurve:renderSCurve, history:renderHistory
+  };
+  if(fn[panel])fn[panel]();
+}
+
+// ── helpers to collect across projects ──
+function allProc(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.procurement?s.procurement.map(x=>({...x,proj:p.name})):[];});}
+function allRisks(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.risks?s.risks.map(x=>({...x,proj:p.name})):[];});}
+function allActions(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.action_items?s.action_items.map(x=>({...x,proj:p.name})):[];});}
+function allCOs(){return PROJECTS.flatMap(p=>{const s=LATEST[p.id];return s&&s.change_orders?s.change_orders.map(x=>({...x,proj:p.name})):[];});}
+
+// ── OVERVIEW ──
+function renderOverview(){
+  // progress cards
+  const rows=PROJECTS.map(p=>{
+    const s=LATEST[p.id]||{};
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div><div style="font-size:14px;font-weight:800;color:var(--navy)">${p.name}</div>
+        <div style="font-size:10px;color:var(--mid)">${p.code}</div></div>
+        <div style="display:flex;gap:6px">${badge(s.sched_status,'sched')} ${badge(s.health,'health')}</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:6px">
+        <div style="font-size:32px;font-weight:800;color:var(--orange)">${pct(s.progress)}</div>
+        <div style="font-size:11px;color:var(--mid);padding-bottom:4px">complete · CPI ${num(s.cpi)}</div>
+      </div>
+      <div class="pbar"><div class="pfill" style="width:${s.progress||0}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mid);margin-top:4px">
+        <span>${badge(s.cost_status,'cost')}</span><span>Budget: ${peso(p.budget)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  const el=document.getElementById('overviewProgress');
+  if(el)el.innerHTML=rows||'<div class="loading">No approved data yet.</div>';
+
+  // charts
+  const labels=PROJECTS.map(p=>p.name);
+  const progData=PROJECTS.map(p=>(LATEST[p.id]?.progress||0));
+  const spendPct=PROJECTS.map(p=>{const s=LATEST[p.id];return s&&p.budget?((s.ac||0)/p.budget*100):0;});
+  mkChart('chartProgressBudget','bar',{labels,datasets:[
+    {label:'Progress %',data:progData,backgroundColor:'#E65100',borderRadius:4},
+    {label:'Spend %',data:spendPct,backgroundColor:'#1E3A6E',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  const budgetData=PROJECTS.map(p=>p.budget/1e6);
+  const acData=PROJECTS.map(p=>(LATEST[p.id]?.ac||0)/1e6);
+  mkChart('chartBudgetUtil','bar',{labels,datasets:[
+    {label:'Budget ₱M',data:budgetData,backgroundColor:'#E0E7EF',borderRadius:4},
+    {label:'Actual ₱M',data:acData,backgroundColor:'#E65100',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>'₱'+v+'M'}}}});
+
+  // safety snap
+  const totIncidents=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.incidents||0),0);
+  const totNCR=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ncr_open||0),0);
+  const totMH=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.man_hours||0),0);
+  const safetyEl=document.getElementById('safetySnap');
+  if(safetyEl)safetyEl.innerHTML=`<div class="dg">
+    <div class="di"><div class="dl">Safe Man-Hours</div><div class="dv">${(totMH/1e6).toFixed(3)}M</div></div>
+    <div class="di"><div class="dl">Incidents</div><div class="dv" style="color:${totIncidents>0?'var(--red)':'var(--green)'}">${totIncidents}</div></div>
+    <div class="di"><div class="dl">NCR Open</div><div class="dv" style="color:${totNCR>0?'var(--amber)':'var(--green)'}">${totNCR}</div></div>
+  </div>`;
+
+  // action snap
+  const actions=allActions().filter(a=>a.status!=='Closed').slice(0,5);
+  const actionEl=document.getElementById('actionSnap');
+  if(actionEl)actionEl.innerHTML=actions.length?actions.map(a=>`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:11px">
+    <span class="badge ${a.priority==='High'?'br':a.priority==='Medium'?'ba':'bg'}">${a.priority||'—'}</span>
+    <strong style="margin-left:6px">${a.proj}</strong> — ${a.issue||a.action||'—'}
+  </div>`).join(''):'<div style="color:var(--mid);font-size:12px;padding:8px 0">No open action items.</div>';
+
+  // proc snap
+  const tbody=document.querySelector('#procSnap tbody');
+  if(tbody){const items=allProc().slice(0,6);tbody.innerHTML=items.map(i=>`<tr><td>${i.proj}</td><td>${i.item||'—'}</td><td>${i.vendor||'—'}</td><td>${i.required||'—'}</td><td>${badge(i.status,'proc')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:var(--mid)">No procurement data.</td></tr>';}
+}
+
+// ── SCHEDULE ──
+function renderSchedule(){
+  const labels=PROJECTS.map(p=>p.name);
+  const svData=PROJECTS.map(p=>LATEST[p.id]?.sv_days||0);
+  mkChart('chartSV','bar',{labels,datasets:[{label:'Variance (days)',data:svData,backgroundColor:svData.map(v=>v>=0?'#1A7A4A':'#C0392B'),borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>(v>0?'+':'')+v+'d'}}}});
+
+  const tbody=document.querySelector('#schedTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};return`<tr><td><strong>${p.name}</strong></td><td>${s.planned_finish||p.planned_finish||'—'}</td><td>${s.forecast_finish||p.forecast_finish||'—'}</td><td><span style="color:${(s.sv_days||0)>=0?'var(--green)':'var(--red)'};font-weight:700">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</span></td></tr>`;}).join('');
+
+  const crit=document.getElementById('criticalList');
+  if(crit)crit.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id];return s?.critical_activities?`<div style="padding:8px 0;border-bottom:1px solid var(--border)"><strong style="font-size:11px;color:var(--orange)">${p.name}</strong> <span style="font-size:12px">${s.critical_activities}</span></div>`:''}).join('')||'<div style="color:var(--mid);font-size:12px">No critical activities flagged.</div>';
+}
+
+// ── COST ──
+function renderCost(){
+  const labels=PROJECTS.map(p=>p.name);
+  const cpiData=PROJECTS.map(p=>LATEST[p.id]?.cpi||0);
+  mkChart('chartCPI','line',{labels,datasets:[
+    {label:'CPI',data:cpiData,borderColor:'#E65100',backgroundColor:'rgba(230,81,0,.1)',tension:.4,pointRadius:5,fill:true},
+    {label:'Target (1.0)',data:PROJECTS.map(()=>1),borderColor:'#1A7A4A',borderDash:[5,5],pointRadius:0}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{min:0}}});
+
+  mkChart('chartCPIBar','bar',{labels,datasets:[{label:'CPI',data:cpiData,backgroundColor:cpiData.map(v=>v>=1?'#1A7A4A':'#C0392B'),borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{min:0}}});
+
+  const tbody=document.querySelector('#costTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};const rem=(p.budget||0)-(s.ac||0);return`<tr>
+    <td><strong>${p.name}</strong></td><td>${peso(p.budget)}</td><td>${peso(s.ac)}</td>
+    <td style="color:${rem>=0?'var(--green)':'var(--red)'}">${peso(rem)}</td>
+    <td style="font-weight:700;color:${(s.cpi||0)>=1?'var(--green)':'var(--red)'}">${num(s.cpi)}</td>
+    <td>${badge(s.cost_status,'cost')}</td></tr>`;}).join('');
+}
+
+// ── PROCUREMENT ──
+function renderProcurement(){
+  const all=allProc();
+  const counts={Delivered:0,'In Progress':0,Delayed:0,Pending:0};
+  all.forEach(i=>{if(counts[i.status]!=null)counts[i.status]++;});
+  mkChart('chartProcStatus','doughnut',{labels:Object.keys(counts),datasets:[{data:Object.values(counts),backgroundColor:['#1A7A4A','#D4830A','#C0392B','#2A3F6B'],borderWidth:2}]},
+    {plugins:{legend:{position:'right',labels:{font:{size:10}}}}});
+  const kpis=document.getElementById('procKPIs');
+  if(kpis)kpis.innerHTML=Object.entries(counts).map(([k,v])=>`<div class="di"><div class="dl">${k}</div><div class="dv">${v}</div></div>`).join('');
+  const tbody=document.querySelector('#procTable tbody');
+  if(tbody)tbody.innerHTML=all.map(i=>`<tr><td>${i.proj}</td><td><strong>${i.item||'—'}</strong></td><td>${i.vendor||'—'}</td><td>${i.required||'—'}</td><td>${i.delivery||'—'}</td><td>${badge(i.status,'proc')}</td><td>${i.buffer||'—'}</td><td>${i.remarks||'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="color:var(--mid)">No procurement data.</td></tr>';
+}
+
+// ── CHANGE ORDERS ──
+function renderChangeOrders(){
+  const all=allCOs();
+  const labels=PROJECTS.map(p=>p.name);
+  const coVal=PROJECTS.map(p=>{const s=LATEST[p.id];return s&&s.change_orders?s.change_orders.reduce((a,c)=>a+(c.amount||0),0)/1e6:0;});
+  mkChart('chartCOVal','bar',{labels,datasets:[{label:'CO Value ₱M',data:coVal,backgroundColor:'#E65100',borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'₱'+v+'M'}}}});
+  const statuses=['Approved','Pending','Rejected'];
+  const sData=statuses.map(st=>all.filter(c=>c.status===st).length);
+  mkChart('chartCOStatus','pie',{labels:statuses,datasets:[{data:sData,backgroundColor:['#1A7A4A','#D4830A','#C0392B'],borderWidth:2}]},
+    {plugins:{legend:{position:'right',labels:{font:{size:10}}}}});
+  const tbody=document.querySelector('#coTable tbody');
+  if(tbody)tbody.innerHTML=all.map(i=>`<tr><td>${i.proj}</td><td>${i.co_no||'—'}</td><td>${i.description||'—'}</td><td>${peso(i.amount)}</td><td>${badge(i.status,'proc')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:var(--mid)">No change orders.</td></tr>';
+}
+
+// ── PRODUCTIVITY ──
+function renderProductivity(){
+  const tbody=document.querySelector('#scoreTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};return`<tr>
+    <td><strong>${p.name}</strong></td><td>${pct(s.progress)}</td>
+    <td>${pct(s.progress)}</td>
+    <td style="color:${(s.sv_days||0)>=0?'var(--green)':'var(--red)'}">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</td>
+    <td>${num(s.ddi)}%</td><td style="color:${(s.ot_rate||0)<=(s.ot_baseline||20)?'var(--green)':'var(--red)'}">${num(s.ot_rate)}%</td>
+    <td>${num(s.ot_baseline)}%</td>
+    <td>${peso(s.ranks_cost)}</td><td>${peso(s.staff_cost)}</td><td>${peso(s.output_lc)}</td>
+    <td style="font-weight:700;color:${(s.olc_alc||1)<=1?'var(--green)':'var(--red)'}">${num(s.olc_alc,3)}</td>
+  </tr>`;}).join('');
+
+  const labels=PROJECTS.map(p=>p.name);
+  mkChart('chartPR','bar',{labels,datasets:[
+    {label:'PR%',data:PROJECTS.map(p=>LATEST[p.id]?.progress||0),backgroundColor:'#E65100',borderRadius:4},
+    {label:'Budget Spend%',data:PROJECTS.map(p=>{const s=LATEST[p.id];return s&&p.budget?(s.ac/p.budget*100):0;}),backgroundColor:'#1E3A6E',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  mkChart('chartDDI','bar',{labels,datasets:[
+    {label:'DDI%',data:PROJECTS.map(p=>LATEST[p.id]?.ddi||0),backgroundColor:'#D4830A',borderRadius:4},
+    {label:'OT%',data:PROJECTS.map(p=>LATEST[p.id]?.ot_rate||0),backgroundColor:'#E65100',borderRadius:4},
+    {label:'OT Baseline%',data:PROJECTS.map(p=>LATEST[p.id]?.ot_baseline||20),backgroundColor:'#1A7A4A',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  const ltbody=document.querySelector('#laborTable tbody');
+  if(ltbody)ltbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};const eff=(s.olc_alc||1)<=1;return`<tr>
+    <td><strong>${p.name}</strong></td><td>${peso(s.ranks_cost)}</td><td>${peso(s.staff_cost)}</td>
+    <td>${peso(s.output_lc)}</td>
+    <td style="font-weight:700;color:${eff?'var(--green)':'var(--red)'}">${num(s.olc_alc,3)}</td>
+    <td><span class="badge ${eff?'bg':'br'}">${eff?'Efficient':'Review'}</span></td>
+  </tr>`;}).join('');
+}
+
+// ── SAFETY ──
+function renderSafety(){
+  const totMH=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.man_hours||0),0);
+  const totInc=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.incidents||0),0);
+  const totNM=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.near_miss||0),0);
+  const totNCR=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ncr_open||0),0);
+  const totDue=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ins_due||0),0);
+  const totDone=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ins_done||0),0);
+  document.getElementById('safetyKPIs').innerHTML=[
+    {l:'Safe Man-Hours',v:(totMH/1e6).toFixed(3)+'M',s:'Cumulative',c:'g'},
+    {l:'Inspections',v:`${totDone}/${totDue}`,s:totDue>0?Math.round(totDone/totDue*100)+'% done':'',c:totDone>=totDue?'g':'a'},
+    {l:'NCR Open',v:totNCR,s:'Non-conformance',c:totNCR===0?'g':'r'},
+    {l:'Incidents',v:totInc,s:totInc===0?'Zero incidents ✓':'Review required',c:totInc===0?'g':'r'},
+    {l:'Near Miss',v:totNM,s:'Reported',c:totNM===0?'g':'a'},
+  ].map(k=>`<div class="kpi ${k.c}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+
+  const pNames=PROJECTS.map(p=>p.name);
+  mkChart('chartIncidents','bar',{labels:pNames,datasets:[
+    {label:'Incidents',data:PROJECTS.map(p=>LATEST[p.id]?.incidents||0),backgroundColor:'#C0392B',borderRadius:4},
+    {label:'Near Miss',data:PROJECTS.map(p=>LATEST[p.id]?.near_miss||0),backgroundColor:'#D4830A',borderRadius:4}
+  ]},{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}});
+
+  const rates=PROJECTS.map(p=>{const s=LATEST[p.id];return s&&s.ins_due?Math.round((s.ins_done||0)/s.ins_due*100):0;});
+  mkChart('chartInspRate','bar',{labels:pNames,datasets:[{label:'Completion %',data:rates,backgroundColor:rates.map(r=>r>=80?'#1A7A4A':r>=50?'#D4830A':'#C0392B'),borderRadius:4}]},
+    {plugins:{legend:{display:false}},scales:{y:{max:100,ticks:{callback:v=>v+'%'}}}});
+
+  const tbody=document.querySelector('#safetyTable tbody');
+  if(tbody)tbody.innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};const rate=s.ins_due?Math.round((s.ins_done||0)/s.ins_due*100):0;return`<tr>
+    <td><strong>${p.name}</strong></td><td>${s.ins_due||0}</td><td>${s.ins_done||0}</td>
+    <td><span style="color:${rate>=80?'var(--green)':rate>=50?'var(--amber)':'var(--red)'};font-weight:700">${rate}%</span></td>
+    <td>${s.man_hours?Number(s.man_hours).toLocaleString():'—'}</td>
+    <td style="color:${s.ncr_open>0?'var(--red)':'var(--green)'};font-weight:700">${s.ncr_open||0}</td>
+    <td style="color:${s.incidents>0?'var(--red)':'var(--green)'};font-weight:700">${s.incidents||0}</td>
+    <td>${s.near_miss||0}</td><td>${s.last_toolbox||'—'}</td><td style="font-size:11px">${s.safety_action||'—'}</td>
+  </tr>`;}).join('');
+}
+
+// ── RISKS ──
+function renderRisks(){
+  const risks=allRisks();
+  const tbody=document.querySelector('#riskTable tbody');
+  if(tbody)tbody.innerHTML=risks.map(r=>`<tr><td>${r.proj}</td><td><strong>${r.desc||'—'}</strong></td><td>${badge(r.impact,'impact')}</td><td><span class="badge ba">${r.status||'—'}</span></td><td>${r.owner||'—'}</td><td>${r.due||'—'}</td><td style="font-size:11px">${r.mitigation||'—'}</td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--mid)">No risks logged.</td></tr>';
+
+  // heat map
+  const hm=document.getElementById('heatMap');
+  if(hm){const levels=['High','Medium','Low'];const cats=['Schedule','Cost','Safety','Quality','External'];
+  hm.innerHTML=cats.map(c=>{const r=risks.find(r=>r.category===c)||{};const lvl=r.impact||'Low';return`<div class="heat-cell heat-${lvl[0]}"><div class="heat-lbl">${c}</div>${lvl}</div>`;}).join('');}
+
+  const actions=allActions();
+  const atbody=document.querySelector('#actionTable tbody');
+  if(atbody)atbody.innerHTML=actions.map((a,i)=>`<tr>
+    <td>${i+1}</td><td>${a.proj}</td><td>${a.issue||'—'}</td>
+    <td><span class="badge ${a.priority==='High'?'br':a.priority==='Medium'?'ba':'bg'}">${a.priority||'—'}</span></td>
+    <td>${a.action||'—'}</td><td>${a.responsible||'—'}</td><td>${a.due_date||'—'}</td>
+    <td><span class="badge ${a.status==='Done'?'bg':a.status==='In Progress'?'ba':'bn'}">${a.status||'Open'}</span></td>
+  </tr>`).join('')||'<tr><td colspan="8" style="color:var(--mid)">No action items.</td></tr>';
+}
+
+// ── CEO ──
+function renderCEO(){
+  const totBudget=PROJECTS.reduce((a,p)=>a+p.budget,0);
+  const totAC=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.ac||0),0);
+  const avgProg=PROJECTS.length?PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.progress||0),0)/PROJECTS.length:0;
+  const avgCPI=PROJECTS.length?PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.cpi||0),0)/PROJECTS.length:0;
+  const totInc=PROJECTS.reduce((a,p)=>a+(LATEST[p.id]?.incidents||0),0);
+  document.getElementById('ceoSnap').innerHTML=[
+    {l:'Projects',v:PROJECTS.length},{l:'Avg Progress',v:avgProg.toFixed(1)+'%'},
+    {l:'Avg CPI',v:avgCPI.toFixed(2)},{l:'Total Budget',v:peso(totBudget)},
+    {l:'Total Spent',v:peso(totAC)},{l:'Incidents',v:totInc}
+  ].map(k=>`<div class="ceo-item"><div class="cl">${k.l}</div><div class="cv">${k.v}</div></div>`).join('');
+
+  document.getElementById('ceoProjects').innerHTML=PROJECTS.map(p=>{const s=LATEST[p.id]||{};return`<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <strong>${p.name}</strong><span>${badge(s.health,'health')}</span>
+    </div>
+    <div class="dg">
+      <div class="di"><div class="dl">Progress</div><div class="dv">${pct(s.progress)}</div></div>
+      <div class="di"><div class="dl">CPI</div><div class="dv">${num(s.cpi)}</div></div>
+      <div class="di"><div class="dl">Schedule</div><div class="dv">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</div></div>
+      <div class="di"><div class="dl">Cost</div><div class="dv">${peso(s.ac)}</div></div>
+    </div>
+    ${s.schedule_rec?`<div style="font-size:11px;color:var(--mid);margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">📌 ${s.schedule_rec}</div>`:''}
+  </div>`;}).join('');
+
+  const risks=allRisks().filter(r=>r.impact==='High');
+  document.querySelector('#ceoRecs tbody').innerHTML=risks.length?risks.map((r,i)=>`<tr><td>${i+1}</td><td>${r.desc}</td><td>${r.mitigation||'—'}</td><td>${r.due||'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="color:var(--mid)">No high-impact risks.</td></tr>';
+}
+
+// ── S-CURVE ──
+function renderSCurve(){
+  const container=document.getElementById('scurveProjects');
+  if(container){
+    container.innerHTML=PROJECTS.map((p,i)=>`<div class="card" style="margin-bottom:16px">
+      <div class="card-title">${p.name} — Physical Progress S-Curve</div>
+      <div class="ch"><canvas id="sc_${i}"></canvas></div>
+    </div>`).join('');
+    PROJECTS.forEach((p,i)=>{
+      const s=LATEST[p.id];
+      if(!s||!s.scurve_data||!s.scurve_data.length)return;
+      const d=s.scurve_data;
+      mkChart(`sc_${i}`,'line',{
+        labels:d.map(r=>r.period),
+        datasets:[
+          {label:'Planned%',data:d.map(r=>r.planned),borderColor:'#1E3A6E',tension:.4,pointRadius:2,fill:false},
+          {label:'Actual%',data:d.map(r=>r.actual),borderColor:'#E65100',tension:.4,pointRadius:3,fill:false,spanGaps:false},
+        ]
+      },{plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
     });
-  });
-  // risks
-  D.risks = [];
-  document.querySelectorAll('#riskEdit tbody tr').forEach(tr=>{
-    const cells = tr.querySelectorAll('input, select, textarea');
-    D.risks.push({
-      desc:cells[0].value, impact:cells[1].value, status:cells[2].value,
-      owner:cells[3].value, due:cells[4].value, mitigation:cells[5].value
-    });
-  });
-  closeAdmin();
-  renderAll();
+  }
+
+  // EVM table
+  const etbody=document.querySelector('#evmTable tbody');
+  if(etbody)etbody.innerHTML=PROJECTS.map(p=>{
+    const s=LATEST[p.id]||{};const bac=p.budget||0;
+    const pv=s.scurve_data&&s.scurve_data.length?s.scurve_data.filter(r=>r.planned_cost).slice(-1)[0]?.planned_cost||0:0;
+    const ev=bac*(s.progress||0)/100;const ac=s.ac||0;
+    const sv=ev-pv;const cv=ev-ac;const spi=pv?ev/pv:0;const cpi=ac?ev/ac:0;
+    const eac=cpi?bac/cpi:bac;const vac=bac-eac;
+    return`<tr><td><strong>${p.name}</strong></td><td>${peso(bac)}</td><td>${peso(pv)}</td><td>${peso(ev)}</td><td>${peso(ac)}</td>
+      <td style="color:${sv>=0?'var(--green)':'var(--red)'}">${peso(sv)}</td>
+      <td style="color:${cv>=0?'var(--green)':'var(--red)'}">${peso(cv)}</td>
+      <td style="color:${spi>=1?'var(--green)':'var(--red)'}">${spi.toFixed(2)}</td>
+      <td style="color:${cpi>=1?'var(--green)':'var(--red)'}">${cpi.toFixed(2)}</td>
+      <td>${peso(eac)}</td><td style="color:${vac>=0?'var(--green)':'var(--red)'}">${peso(vac)}</td></tr>`;
+  }).join('');
 }
 
-// Procurement edit
-function renderProcEdit() {
-  const tbody = document.querySelector('#procEdit tbody');
-  tbody.innerHTML = D.procurement.map((r,i)=>`<tr>
-    <td><input value="${r.item||''}"></td>
-    <td><input value="${r.vendor||''}"></td>
-    <td><input value="${r.required||''}"></td>
-    <td><input value="${r.delivery||''}"></td>
-    <td><select>${['Delivered','In Progress','Delayed','Pending'].map(o=>`<option${o===r.status?' selected':''}>${o}</option>`).join('')}</select></td>
-    <td><input value="${r.buffer||''}"></td>
-    <td><input value="${r.remarks||''}"></td>
-    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
-  </tr>`).join('');
-}
-function addProcRow() {
-  const tbody = document.querySelector('#procEdit tbody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input></td><td><input></td><td><input></td><td><input></td>
-    <td><select><option>In Progress</option><option>Delivered</option><option>Delayed</option><option>Pending</option></select></td>
-    <td><input></td><td><input></td>
-    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>`;
-  tbody.appendChild(tr);
+// ── HISTORY ──
+function renderHistory(){
+  // history trend charts
+  const histByWeek={};
+  HISTORY.forEach(h=>{if(!histByWeek[h.week_of])histByWeek[h.week_of]=[];histByWeek[h.week_of].push(h);});
+  const weeks=Object.keys(histByWeek).slice(-12);
+  const progTrends=PROJECTS.map(p=>({label:p.name,data:weeks.map(w=>{const e=histByWeek[w]?.find(h=>h.project_id===p.id);return e?.snapshot?.progress||null;}),tension:.4,fill:false}));
+  const colors=['#E65100','#1E3A6E','#1A7A4A','#D4830A','#C0392B'];
+  progTrends.forEach((d,i)=>d.borderColor=colors[i%colors.length]);
+  mkChart('chartHistProg','line',{labels:weeks,datasets:progTrends},{plugins:{legend:{position:'top',labels:{font:{size:9}}}},scales:{y:{ticks:{callback:v=>v+'%'}}}});
+
+  const cpiTrends=PROJECTS.map((p,i)=>({label:p.name,data:weeks.map(w=>{const e=histByWeek[w]?.find(h=>h.project_id===p.id);return e?.snapshot?.cpi||null;}),tension:.4,fill:false,borderColor:colors[i%colors.length]}));
+  mkChart('chartHistCPI','line',{labels:weeks,datasets:cpiTrends},{plugins:{legend:{position:'top',labels:{font:{size:9}}}},scales:{y:{min:0}}});
+
+  const costTrends=PROJECTS.map((p,i)=>({label:p.name,data:weeks.map(w=>{const e=histByWeek[w]?.find(h=>h.project_id===p.id);return e?.snapshot?.ac?e.snapshot.ac/1e6:null;}),tension:.4,fill:false,borderColor:colors[i%colors.length]}));
+  mkChart('chartHistCost','line',{labels:weeks,datasets:costTrends},{plugins:{legend:{position:'top',labels:{font:{size:9}}}},scales:{y:{ticks:{callback:v=>'₱'+v+'M'}}}});
+
+  // log
+  const log=document.getElementById('historyLog');
+  if(!HISTORY.length){log.innerHTML='<div style="text-align:center;padding:40px;color:var(--mid);font-size:13px">📜 No history yet. History is recorded automatically each time the OM approves a weekly update.</div>';return;}
+  const grouped={};
+  HISTORY.forEach(h=>{if(!grouped[h.week_of])grouped[h.week_of]=[];grouped[h.week_of].push(h);});
+  log.innerHTML=Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([week,entries])=>`
+    <div class="tl-entry">
+      <div class="tl-week">Week of ${week}</div>
+      ${entries.map(e=>{const s=e.snapshot||{};const proj=PROJECTS.find(p=>p.id===e.project_id);return`
+        <div class="tl-card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>${proj?.name||'Unknown'}</strong>
+            <span style="font-size:10px;color:var(--mid)">Approved by ${e.approved_by} · ${new Date(e.approved_at).toLocaleDateString()}</span>
+          </div>
+          <div class="tl-row">
+            <div class="tl-item"><div class="tl-l">Progress</div><div class="tl-v">${pct(s.progress)}</div></div>
+            <div class="tl-item"><div class="tl-l">Schedule</div><div class="tl-v">${badge(s.sched_status,'sched')}</div></div>
+            <div class="tl-item"><div class="tl-l">CPI</div><div class="tl-v">${num(s.cpi)}</div></div>
+            <div class="tl-item"><div class="tl-l">Actual Cost</div><div class="tl-v">${peso(s.ac)}</div></div>
+            <div class="tl-item"><div class="tl-l">Incidents</div><div class="tl-v">${s.incidents??'—'}</div></div>
+            <div class="tl-item"><div class="tl-l">SV</div><div class="tl-v" style="color:${(s.sv_days||0)>=0?'var(--green)':'var(--red)'}">${s.sv_days!=null?(s.sv_days>0?'+':'')+s.sv_days+'d':'—'}</div></div>
+          </div>
+          ${s.critical_activities?`<div style="font-size:11px;color:var(--mid);margin-top:6px">📌 ${s.critical_activities}</div>`:''}
+        </div>`}).join('')}
+    </div>`).join('');
 }
 
-// Risk edit
-function renderRiskEdit() {
-  const tbody = document.querySelector('#riskEdit tbody');
-  tbody.innerHTML = D.risks.map((r,i)=>`<tr>
-    <td><input value="${r.desc||''}"></td>
-    <td><select>${['High','Medium','Low'].map(o=>`<option${o===r.impact?' selected':''}>${o}</option>`).join('')}</select></td>
-    <td><select>${['Ongoing','Active','Closed','Monitoring'].map(o=>`<option${o===r.status?' selected':''}>${o}</option>`).join('')}</select></td>
-    <td><input value="${r.owner||''}"></td>
-    <td><input value="${r.due||''}"></td>
-    <td><input value="${r.mitigation||''}"></td>
-    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
-  </tr>`).join('');
-}
-function addRiskRow() {
-  const tbody = document.querySelector('#riskEdit tbody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input></td>
-    <td><select><option>High</option><option>Medium</option><option>Low</option></select></td>
-    <td><select><option>Ongoing</option><option>Active</option><option>Closed</option><option>Monitoring</option></select></td>
-    <td><input></td><td><input></td><td><input></td>
-    <td><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>`;
-  tbody.appendChild(tr);
-}
-
-// ====================== INIT ======================
-renderAll();
+// ── INIT ──
+loadData();
 </script>
 </body>
 </html>
