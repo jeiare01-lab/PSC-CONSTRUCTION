@@ -1291,11 +1291,16 @@ function parseTemplate(wb){
   if(sb){
     d.ot_rate    = findByLabel(sb,'OT Rate');
     d.ot_baseline= findByLabel(sb,'OT Baseline');
-    d.olc_alc    = findByLabel(sb,'OLC');
+    // OLC/ALC: if PM entered as percentage (e.g. 66 instead of 0.66), auto-convert
+    const rawOlc = findByLabel(sb,'OLC');
+    if(rawOlc !== '' && rawOlc !== null){
+      const olcNum = parseFloat(rawOlc);
+      d.olc_alc = olcNum > 10 ? (olcNum / 100).toFixed(3) : rawOlc;
+    }
     d.ranks_cost = findByLabel(sb,'Ranks Cost');
     d.staff_cost = findByLabel(sb,'Staff Cost');
     d.output_lc  = findByLabel(sb,'Output Labor');
-    // Productivity extras (stored in safety_action as supplement if needed)
+    // Productivity extras
     const ddi_sb = findByLabel(sb,'Daily Deployment Index');
     if(ddi_sb && !d.ddi) d.ddi = ddi_sb;
   }
@@ -1535,7 +1540,20 @@ function applyUploadedData(){
     </tr>`).join('');
   }
 
-  toast('✅ Data applied to '+proj.name+' — review and click Submit for OM Approval','ok');
+  // Warn about missing PA fields
+  const warnings = [];
+  if(!d.pa_budget)  warnings.push('PA Budget');
+  if(!d.pa_actual)  warnings.push('PA Actual');
+  if(!d.cpi)        warnings.push('CPI');
+  if(!d.ot_rate)    warnings.push('OT Rate');
+  if(!d.olc_alc)    warnings.push('OLC/ALC');
+  if(!d.ranks_cost) warnings.push('Ranks Cost');
+  if(!d.output_lc)  warnings.push('Output Labor Cost');
+  if(warnings.length){
+    setTimeout(()=>toast('⚠ Missing: '+warnings.join(', ')+' — fill manually before submitting','err'),600);
+  } else {
+    toast('✅ Data applied to '+proj.name+' — review and click Submit for OM Approval','ok');
+  }
   clearUpload();
 
   // Switch to status tab to show filled data
